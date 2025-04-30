@@ -1,12 +1,9 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
-#define MSG_MAX 1024
+#define MAX_MSG_LEN 1024
 
-typedef enum { MSG_PING, MSG_PONG } msg_type_t;
-typedef struct {
-	msg_type_t type;
-	char payload[MSG_MAX];
-} message_t;
+int send_msg(int sockfd, const char *json_str);
+int recv_msg(int sockfd, char *buffer, int bufsize);
 
 #endif
