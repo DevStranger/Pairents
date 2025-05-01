@@ -1,13 +1,13 @@
 CC := gcc
 CFLAGS := -I./common -I./common/cJSON -Wall -Wextra -pthread
-LDFLAGS := -lSDL2 -pthread
+LDFLAGS := -lSDL2 -lSDL2_ttf -pthread
 
 SRCDIRS := server/src client/src common/cJSON
 OBJDIR := obj
 BINDIR := bin
 
 SERVER_SRC := server/src/main.c
-CLIENT_SRC := client/src/main.c
+CLIENT_SRC := client/src/main.c client/src/creature.c
 COMMON_SRC := common/cJSON/cJSON.c common/protocol.c
 
 SERVER_OBJ := $(OBJDIR)/server_main.o
@@ -28,13 +28,16 @@ $(OBJDIR)/protocol.o: common/protocol.c
 $(OBJDIR)/server_main.o: $(SERVER_SRC)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJDIR)/client_main.o: $(CLIENT_SRC)
+$(OBJDIR)/client_main.o: client/src/main.c
+	$(CC) $(CFLAGS) -c $< -o $@
+	
+$(OBJDIR)/client_creature.o: client/src/creature.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 server: $(SERVER_OBJ) $(COMMON_OBJ)
 	$(CC) $^ -o $(BINDIR)/server $(LDFLAGS)
 
-client: $(CLIENT_OBJ) $(COMMON_OBJ)
+client: $(OBJDIR)/client_main.o $(OBJDIR)/client_creature.o $(COMMON_OBJ)
 	$(CC) $^ -o $(BINDIR)/client $(LDFLAGS)
 
 clean:
