@@ -5,17 +5,17 @@
 #include <stdlib.h>
 #include "creature.h"
 
-#define WINDOW_WIDTH 640
+#define WINDOW_WIDTH 840
 #define WINDOW_HEIGHT 480
 
-// Deklaracja globalna wskaźnika do ASCII
+// deklaracja globalna wskaźnika do ASCII
 char *bunny_art = NULL;
 
 void draw_bar(SDL_Renderer *r, int x, int y, int w, int h, int value, SDL_Color color) {
     SDL_Rect outer = { x, y, w, h };
     SDL_Rect inner = { x + 2, y + 2, (w - 4) * value / 100, h - 4 };
 
-    SDL_SetRenderDrawColor(r, 80, 80, 80, 255);  // szary
+    SDL_SetRenderDrawColor(r, 80, 80, 80, 255); 
     SDL_RenderFillRect(r, &outer);
 
     SDL_SetRenderDrawColor(r, color.r, color.g, color.b, 255);
@@ -92,16 +92,16 @@ int main() {
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     // czcionki
-    TTF_Font *font_text  = TTF_OpenFont("client/assets/MatrixtypeDisplayBold-6R4e6.ttf", 14);
-    TTF_Font *font_emoji = TTF_OpenFont("client/assets/NotoEmoji-VariableFont_wght.ttf", 18);
-    TTF_Font *font_bunny = TTF_OpenFont("client/assets/MatrixtypeDisplayBold-6R4e6.ttf", 6); 
+    TTF_Font *font_text  = TTF_OpenFont("client/assets/fonts/MatrixtypeDisplayBold-6R4e6.ttf", 14);
+    TTF_Font *font_emoji = TTF_OpenFont("client/assets/fonts/NotoEmoji-VariableFont_wght.ttf", 18);
+    TTF_Font *font_bunny = TTF_OpenFont("client/assets/fonts/MatrixtypeDisplayBold-6R4e6.ttf", 6); 
 
     if (!font_text || !font_emoji || !font_bunny) {
         printf("Brak czcionki! %s\n", TTF_GetError());
         return 1;
     }
 
-    bunny_art = load_ascii_art_from_file("client/assets/bunny.txt");
+    bunny_art = load_ascii_art_from_file("client/assets/bunny/default.txt");
     if (!bunny_art) {
         return 1;
     }
