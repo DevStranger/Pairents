@@ -17,7 +17,7 @@
 // --- GUI ---
 #define BUTTON_COUNT 5
 SDL_Rect buttons[BUTTON_COUNT];
-const char *button_labels[BUTTON_COUNT] = {"🍓 Feed", "📖 Read", "💤 Sleep", "🤗 Hug", "🎡 Play"};
+const char *button_labels[BUTTON_COUNT] = {"Feed", "Read", "Sleep", "Hug", "Play"};
 
 // --- Networking ---
 int sockfd = -1;
