@@ -389,7 +389,6 @@ void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font
         TTF_SizeText(font_emoji, button_symbols[i], &w_symbol, &h_symbol);
 
         draw_text(renderer, font_regular, button_labels[i], x + w_symbol + 5, y, color);
-        }
     }
 }
 
