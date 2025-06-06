@@ -369,11 +369,10 @@ void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font
         buttons[i].w = 140;
         buttons[i].h = 40;
 
-        // Kolor tła: podświetl, jeśli to ostatnio kliknięty guzik i kliknięcie jest niedawne (np. 300ms)
         if (i == last_clicked_button && now - last_click_time < 300) {
-            SDL_SetRenderDrawColor(renderer, 70, 70, 120, 255); // jaśniejszy, podświetlony
+            SDL_SetRenderDrawColor(renderer, 70, 70, 120, 255);
         } else {
-            SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);  // normalny kolor
+            SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
         }
         SDL_RenderFillRect(renderer, &buttons[i]);
 
@@ -389,8 +388,9 @@ void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font
         TTF_SizeText(font_emoji, button_symbols[i], &w_symbol, &h_symbol);
 
         draw_text(renderer, font_regular, button_labels[i], x + w_symbol + 5, y, color);
-        }
-    }
+    }  
+
+}  
 
 int check_button_click(int x, int y) {
     for (int i = 0; i < BUTTON_COUNT; i++) {
