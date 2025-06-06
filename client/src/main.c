@@ -349,23 +349,17 @@ void draw_ascii_art(SDL_Renderer *r, TTF_Font *font, const char *ascii_art, int 
 }
 
 void draw_buttons(SDL_Renderer *renderer, TTF_Font *font, SDL_Color color) {
-    int button_width = 140;
-    int button_height = 48;
-    int spacing = 10;
-    int start_x = 20;
-    int start_y = 280;
-
     for (int i = 0; i < BUTTON_COUNT; i++) {
-        SDL_Rect rect = {start_x + i*(button_width + spacing), start_y, button_width, button_height};
-        buttons[i] = rect;
+        buttons[i].x = 20 + i * 160;
+        buttons[i].y = 420;
+        buttons[i].w = 140;
+        buttons[i].h = 40;
 
         SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
-        SDL_RenderFillRect(renderer, &rect);
-        SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
-        SDL_RenderDrawRect(renderer, &rect);
-
-        // Label
-        draw_text(renderer, font, button_labels[i], rect.x + 20, rect.y + 12, color);
+        SDL_RenderFillRect(renderer, &buttons[i]);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderDrawRect(renderer, &buttons[i]);
+        draw_text(renderer, font, button_labels[i], buttons[i].x + 10, buttons[i].y + 10, color);
     }
 }
 
