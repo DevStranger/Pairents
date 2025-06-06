@@ -216,8 +216,8 @@ int main(int argc, char *argv[]) {
                     }
                 }
             }
-
-
+        }
+        
         Uint32 now = SDL_GetTicks();
         if (now - last_update > 1000) {
             update_creature(&creature);
