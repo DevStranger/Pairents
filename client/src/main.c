@@ -33,7 +33,7 @@ void draw_bar(SDL_Renderer *r, int x, int y, int w, int h, int value, SDL_Color 
 void draw_text(SDL_Renderer *r, TTF_Font *font, const char *text, int x, int y, SDL_Color color);
 void draw_ascii_art(SDL_Renderer *r, TTF_Font *font, const char *ascii_art, int x, int y, SDL_Color color);
 char* load_ascii_art_from_file(const char *filepath);
-void draw_buttons(SDL_Renderer *renderer, TTF_Font *font, SDL_Color color);
+void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font_special, SDL_Color color);
 int check_button_click(int x, int y);
 
 // --- Sieć: wysyłanie i odbieranie ---
