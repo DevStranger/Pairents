@@ -134,8 +134,6 @@ int main(int argc, char *argv[]) {
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-    init_buttons();
-    
     TTF_Font *font_text  = TTF_OpenFont("client/assets/fonts/MatrixtypeDisplayBold-6R4e6.ttf", 14);
     TTF_Font *font_emoji = TTF_OpenFont("client/assets/fonts/NotoEmoji-VariableFont_wght.ttf", 18);
     TTF_Font *font_bunny = TTF_OpenFont("client/assets/fonts/MatrixtypeDisplayBold-6R4e6.ttf", 6); 
@@ -353,30 +351,30 @@ void draw_ascii_art(SDL_Renderer *r, TTF_Font *font, const char *ascii_art, int 
     }
 }
 
-void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_text, TTF_Font *font_emoji, SDL_Color color) {
-    Uint32 now = SDL_GetTicks();
-
-    for (int i = 0; i < BUTTON_COUNT; i++) {
-        // Jeśli to kliknięty przycisk i mniej niż 200ms minęło — pokaż inny kolor
-        if (i == last_clicked_button && now - last_click_time < 200) {
-            SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);  // kliknięty: szary
-        } else {
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);  // normalny: biały
-        }
-
-        SDL_RenderFillRect(renderer, &buttons[i]);
-
-        SDL_Color black = {0, 0, 0};
-        draw_text(renderer, font_text, button_labels[i], buttons[i].x + 10, buttons[i].y + 10, black);
-    }
-}
-
-void init_buttons() {
+void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font_emoji, SDL_Color color) {
     for (int i = 0; i < BUTTON_COUNT; i++) {
         buttons[i].x = 20 + i * 160;
         buttons[i].y = 420;
         buttons[i].w = 140;
         buttons[i].h = 40;
+
+        SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+        SDL_RenderFillRect(renderer, &buttons[i]);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderDrawRect(renderer, &buttons[i]);
+
+        int x = buttons[i].x + 10;
+        int y = buttons[i].y + 10;
+
+        // Narysuj symbol (np. emoji)
+        draw_text(renderer, font_emoji, button_symbols[i], x, y, color);
+
+        // Oblicz szerokość symbolu, żeby przesunąć tekst
+        int w_symbol = 0, h_symbol = 0;
+        TTF_SizeText(font_emoji, button_symbols[i], &w_symbol, &h_symbol);
+
+        // Narysuj nazwę przycisku za symbolem
+        draw_text(renderer, font_regular, button_labels[i], x + w_symbol + 5, y, color);
     }
 }
 
