@@ -28,6 +28,10 @@ int session_id = -1;
 int player_id = 0;  
 bool running = true;
 
+// Obsługa guzików
+int last_clicked_button = -1;
+Uint32 last_click_time = 0;
+
 // ASCII art
 char *bunny_art = NULL;
 
@@ -192,23 +196,27 @@ int main(int argc, char *argv[]) {
             if (event.type == SDL_QUIT) {
                 running = false;
             } else if (event.type == SDL_MOUSEBUTTONDOWN) {
-                printf("Kliknięto na pozycji x=%d, y=%d\n", event.button.x, event.button.y);
                 int clicked = check_button_click(event.button.x, event.button.y);
-                if (clicked != -1 && session_id != -1) {
-                    printf("Kliknięto: %s\n", button_labels[clicked]);
+                printf("Kliknięto na pozycji x=%d, y=%d\n", event.button.x, event.button.y);
 
-                    // Wyślij akcję do serwera
-                    Message msg = {0};
-                    msg.type = MSG_ACTION;
-                    msg.session_id = session_id;
-                    msg.player_id = player_id;
-                    msg.action_code = clicked;  
-                    snprintf(msg.payload, sizeof(msg.payload), "%s", button_labels[clicked]);
-
-                    send_message(&msg);
+                if (clicked != -1) {
+                    printf("Kliknięto guzik: %s\n", button_labels[clicked]);
+            
+                    last_clicked_button = clicked;
+                    last_click_time = SDL_GetTicks();
+            
+                    if (session_id != -1) {
+                        Message msg = {0};
+                        msg.type = MSG_ACTION;
+                        msg.session_id = session_id;
+                        msg.player_id = player_id;
+                        msg.action_code = clicked;
+                        snprintf(msg.payload, sizeof(msg.payload), "%s", button_labels[clicked]);
+                        send_message(&msg);
+                    }
                 }
             }
-        }
+
 
         Uint32 now = SDL_GetTicks();
         if (now - last_update > 1000) {
@@ -353,28 +361,33 @@ void draw_ascii_art(SDL_Renderer *r, TTF_Font *font, const char *ascii_art, int 
 }
 
 void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font_emoji, SDL_Color color) {
+    Uint32 now = SDL_GetTicks();
+
     for (int i = 0; i < BUTTON_COUNT; i++) {
         buttons[i].x = 20 + i * 160;
         buttons[i].y = 420;
         buttons[i].w = 140;
         buttons[i].h = 40;
 
-        SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+        // Kolor tła: podświetl, jeśli to ostatnio kliknięty guzik i kliknięcie jest niedawne (np. 300ms)
+        if (i == last_clicked_button && now - last_click_time < 300) {
+            SDL_SetRenderDrawColor(renderer, 70, 70, 120, 255); // jaśniejszy, podświetlony
+        } else {
+            SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);  // normalny kolor
+        }
         SDL_RenderFillRect(renderer, &buttons[i]);
+
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDrawRect(renderer, &buttons[i]);
 
         int x = buttons[i].x + 10;
         int y = buttons[i].y + 10;
 
-        // Narysuj symbol (np. emoji)
         draw_text(renderer, font_emoji, button_symbols[i], x, y, color);
 
-        // Oblicz szerokość symbolu, żeby przesunąć tekst
         int w_symbol = 0, h_symbol = 0;
         TTF_SizeText(font_emoji, button_symbols[i], &w_symbol, &h_symbol);
 
-        // Narysuj nazwę przycisku za symbolem
         draw_text(renderer, font_regular, button_labels[i], x + w_symbol + 5, y, color);
     }
 }
