@@ -1,4 +1,7 @@
 #include "session.h"
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 static GameSession sessions[MAX_SESSIONS];
 
