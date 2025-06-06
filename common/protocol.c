@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 int send_msg(int sockfd, const char *json_str) {
 	char msg[MAX_MSG_LEN];

@@ -1,0 +1,3 @@
+[submodule "common/cJSON"]
+	path = common/cJSON
+	url = https://github.com/DaveGamble/cJSON.git

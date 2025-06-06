@@ -11,6 +11,11 @@
 // deklaracja globalna wskaźnika do ASCII
 char *bunny_art = NULL;
 
+// --- NOWOŚĆ: przyciski akcji ---
+#define BUTTON_COUNT 5
+SDL_Rect buttons[BUTTON_COUNT];
+const char *button_labels[BUTTON_COUNT] = {"🍓 Feed", "📖 Read", "💤 Sleep", "🤗 Hug", "🎡 Play"};
+
 void draw_bar(SDL_Renderer *r, int x, int y, int w, int h, int value, SDL_Color color) {
     SDL_Rect outer = { x, y, w, h };
     SDL_Rect inner = { x + 2, y + 2, (w - 4) * value / 100, h - 4 };
@@ -81,6 +86,31 @@ char* load_ascii_art_from_file(const char *filepath) {
     return buffer;
 }
 
+void draw_buttons(SDL_Renderer *renderer, TTF_Font *font, SDL_Color color) {
+    for (int i = 0; i < BUTTON_COUNT; i++) {
+        buttons[i].x = 20 + i * 160;
+        buttons[i].y = 420;
+        buttons[i].w = 140;
+        buttons[i].h = 40;
+
+        SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+        SDL_RenderFillRect(renderer, &buttons[i]);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderDrawRect(renderer, &buttons[i]);
+        draw_text(renderer, font, button_labels[i], buttons[i].x + 10, buttons[i].y + 10, color);
+    }
+}
+
+int check_button_click(int x, int y) {
+    for (int i = 0; i < BUTTON_COUNT; i++) {
+        if (x >= buttons[i].x && x <= buttons[i].x + buttons[i].w &&
+            y >= buttons[i].y && y <= buttons[i].y + buttons[i].h) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 int main() {
     SDL_Init(SDL_INIT_VIDEO);
     TTF_Init();
@@ -91,7 +121,6 @@ int main() {
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-    // czcionki
     TTF_Font *font_text  = TTF_OpenFont("client/assets/fonts/MatrixtypeDisplayBold-6R4e6.ttf", 14);
     TTF_Font *font_emoji = TTF_OpenFont("client/assets/fonts/NotoEmoji-VariableFont_wght.ttf", 18);
     TTF_Font *font_bunny = TTF_OpenFont("client/assets/fonts/MatrixtypeDisplayBold-6R4e6.ttf", 6); 
@@ -125,6 +154,12 @@ int main() {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = false;
+            } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+                int clicked = check_button_click(event.button.x, event.button.y);
+                if (clicked != -1) {
+                    printf("Kliknięto: %s\n", button_labels[clicked]);
+                    // TODO: send_msg(...) do serwera z akcją
+                }
             }
         }
 
@@ -180,6 +215,8 @@ int main() {
         draw_text(renderer, font_text, love_value, 360, 190, white);
 
         draw_ascii_art(renderer, font_bunny, bunny_art, 420, 30, white); 
+
+        draw_buttons(renderer, font_text, white);
 
         SDL_RenderPresent(renderer);
         SDL_Delay(16);
