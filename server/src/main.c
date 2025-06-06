@@ -24,6 +24,9 @@ typedef struct {
     char action2[32];           // akcja gracza 2
     bool resolved;              // czy akcje są zsynchronizowane
     time_t window_start;        // czas rozpoczęcia okna synchronizacji
+    bool action1_ready;
+    bool action2_ready;
+
 } GameSession;
 
 static GameSession sessions[MAX_SESSIONS];
@@ -71,49 +74,61 @@ void *client_listener(void *arg) {
         const char *gid = game_id_json->valuestring;
         const char *action = action_json->valuestring;
 
-        // Znajdujemy sesję po game_id
-        pthread_mutex_lock(&queue_mutex);
-        for (int i = 0; i < session_count; i++) {
-            if (strcmp(sessions[i].game_id, gid) == 0) {
-                if (sockfd == sessions[i].sock1) {
-                    strcpy(sessions[i].action1, action);
-                } else if (sockfd == sessions[i].sock2) {
-                    strcpy(sessions[i].action2, action);
-                }
-
-                // Sprawdzamy, czy obie akcje są przesłane i czy się zgadzają
-                if (!sessions[i].resolved &&
-                    strlen(sessions[i].action1) > 0 &&
-                    strlen(sessions[i].action2) > 0) {
-
-                    if (strcmp(sessions[i].action1, sessions[i].action2) == 0) {
-                        sessions[i].resolved = true;
-
-                        char response[128];
-                        snprintf(response, sizeof(response),
-                            "{\"status\":\"accepted\",\"action\":\"%s\"}",
-                            sessions[i].action1);
-                        send_msg(sessions[i].sock1, response);
-                        send_msg(sessions[i].sock2, response);
-                        printf("[SYNC] Action '%s' confirmed by both players in session %s.\n",
-                               sessions[i].action1, gid);
-                    } else {
-                        send_msg(sessions[i].sock1, "{\"status\":\"mismatch\"}");
-                        send_msg(sessions[i].sock2, "{\"status\":\"mismatch\"}");
-                        printf("[SYNC] Action mismatch in session %s.\n", gid);
-                    }
-
-                    // Możesz też tu wyczyścić akcje na kolejną rundę:
-                    // strcpy(sessions[i].action1, "");
-                    // strcpy(sessions[i].action2, "");
-                    // sessions[i].resolved = false;
-                }
+       // Znajdujemy sesję po game_id
+    pthread_mutex_lock(&queue_mutex);
+    for (int i = 0; i < session_count; i++) {
+        if (strcmp(sessions[i].game_id, gid) == 0) {
+            GameSession *s = &sessions[i];
+    
+            // Jeśli już czeka na rozstrzygnięcie, nie pozwalamy na dalsze klikanie
+            if ((sockfd == s->sock1 && s->action1_ready) ||
+                (sockfd == s->sock2 && s->action2_ready)) {
+                send_msg(sockfd, "{\"status\":\"wait\"}");
                 break;
             }
+    
+            // Zapisujemy akcję i oznaczamy jako gotową
+            if (sockfd == s->sock1) {
+                strncpy(s->action1, action, sizeof(s->action1));
+                s->action1_ready = true;
+            } else if (sockfd == s->sock2) {
+                strncpy(s->action2, action, sizeof(s->action2));
+                s->action2_ready = true;
+            }
+    
+            // Jeśli obaj wybrali akcje
+            if (s->action1_ready && s->action2_ready) {
+                if (strcmp(s->action1, s->action2) == 0) {
+                    s->resolved = true;
+    
+                    char response[128];
+                    snprintf(response, sizeof(response),
+                             "{\"status\":\"accepted\",\"action\":\"%s\"}", s->action1);
+                    send_msg(s->sock1, response);
+                    send_msg(s->sock2, response);
+    
+                    printf("[SYNC] Action '%s' accepted for session %s\n", s->action1, s->game_id);
+                } else {
+                    send_msg(s->sock1, "{\"status\":\"mismatch\"}");
+                    send_msg(s->sock2, "{\"status\":\"mismatch\"}");
+    
+                    printf("[SYNC] Mismatch: %s vs %s in session %s\n",
+                           s->action1, s->action2, s->game_id);
+                }
+    
+                // Reset tury
+                s->action1_ready = false;
+                s->action2_ready = false;
+                s->action1[0] = '\0';
+                s->action2[0] = '\0';
+                s->resolved = false;
+            }
+            break;
         }
-        pthread_mutex_unlock(&queue_mutex);
+    }
+    pthread_mutex_unlock(&queue_mutex);
 
-        cJSON_Delete(json);
+    cJSON_Delete(json);
     }
 
     return NULL;
@@ -123,6 +138,8 @@ void *client_listener(void *arg) {
 void *handle_client(void *arg) {
     int sockfd = *(int *)arg;
     free(arg);
+    sessions[session_count].action1_ready = false;
+    sessions[session_count].action2_ready = false;
 
     printf("[CONNECT] Client connected: sock=%d\n", sockfd);
 
