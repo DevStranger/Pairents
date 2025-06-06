@@ -6,7 +6,7 @@ SRCDIRS := server/src client/src common/cJSON
 OBJDIR := obj
 BINDIR := bin
 
-SERVER_SRC := server/src/main.c
+SERVER_SRC := server/src/main.c server/src/session.c
 CLIENT_SRC := client/src/main.c client/src/creature.c
 COMMON_SRC := common/cJSON/cJSON.c common/protocol.c
 
