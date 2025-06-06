@@ -17,7 +17,7 @@
 // --- GUI ---
 #define BUTTON_COUNT 5
 SDL_Rect buttons[BUTTON_COUNT];
-const char *button_labels[BUTTON_COUNT] = {"Feed", "Read", "Sleep", "Hug", "Play"};
+const char *button_labels[BUTTON_COUNT] = {"🍓 Feed", "📖 Read", "💤 Sleep", "🤗 Hug", "🎡 Play"};
 
 // --- Networking ---
 int sockfd = -1;
@@ -262,7 +262,7 @@ int main(int argc, char *argv[]) {
         draw_ascii_art(renderer, font_bunny, bunny_art, 450, 50, white);
 
         // Rysuj przyciski
-        draw_buttons(renderer, font_text, white);
+        draw_buttons(renderer, font_text, font_emoji, white);
 
         SDL_RenderPresent(renderer);
 
@@ -348,18 +348,41 @@ void draw_ascii_art(SDL_Renderer *r, TTF_Font *font, const char *ascii_art, int 
     }
 }
 
-void draw_buttons(SDL_Renderer *renderer, TTF_Font *font, SDL_Color color) {
+void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font_special, SDL_Color color) {
     for (int i = 0; i < BUTTON_COUNT; i++) {
         buttons[i].x = 20 + i * 160;
         buttons[i].y = 420;
         buttons[i].w = 140;
         buttons[i].h = 40;
 
+        // Tło przycisku
         SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
         SDL_RenderFillRect(renderer, &buttons[i]);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDrawRect(renderer, &buttons[i]);
-        draw_text(renderer, font, button_labels[i], buttons[i].x + 10, buttons[i].y + 10, color);
+
+        // Podziel tekst na pierwszy znak i resztę
+        const char *full_text = button_labels[i];
+        char first_char[2] = { full_text[0], '\0' };
+        const char *rest_text = &full_text[1];
+
+        // Renderuj pierwszy znak specjalną czcionką
+        SDL_Surface *first_surf = TTF_RenderUTF8_Blended(font_special, first_char, color);
+        SDL_Texture *first_tex = SDL_CreateTextureFromSurface(renderer, first_surf);
+        SDL_Rect first_rect = { buttons[i].x + 10, buttons[i].y + 10, first_surf->w, first_surf->h };
+        SDL_RenderCopy(renderer, first_tex, NULL, &first_rect);
+
+        // Renderuj resztę normalną czcionką
+        SDL_Surface *rest_surf = TTF_RenderUTF8_Blended(font_regular, rest_text, color);
+        SDL_Texture *rest_tex = SDL_CreateTextureFromSurface(renderer, rest_surf);
+        SDL_Rect rest_rect = { first_rect.x + first_rect.w, buttons[i].y + 10, rest_surf->w, rest_surf->h };
+        SDL_RenderCopy(renderer, rest_tex, NULL, &rest_rect);
+
+        // Zwolnij zasoby
+        SDL_FreeSurface(first_surf);
+        SDL_FreeSurface(rest_surf);
+        SDL_DestroyTexture(first_tex);
+        SDL_DestroyTexture(rest_tex);
     }
 }
 
