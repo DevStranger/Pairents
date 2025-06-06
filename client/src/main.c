@@ -262,7 +262,7 @@ int main(int argc, char *argv[]) {
         draw_ascii_art(renderer, font_bunny, bunny_art, 450, 50, white);
 
         // Rysuj przyciski
-        draw_buttons(renderer, font_emoji, white);
+        draw_buttons(renderer, font_text, white);
 
         SDL_RenderPresent(renderer);
 
