@@ -10,7 +10,7 @@ SERVER_SRC := server/src/main.c server/src/session.c
 CLIENT_SRC := client/src/main.c client/src/creature.c
 COMMON_SRC := common/cJSON/cJSON.c common/protocol.c
 
-SERVER_OBJ := $(OBJDIR)/server_main.o
+SERVER_OBJ := $(OBJDIR)/server_main.o $(OBJDIR)/server_session.o
 CLIENT_OBJ := $(OBJDIR)/client_main.o
 COMMON_OBJ := $(OBJDIR)/cJSON.o $(OBJDIR)/protocol.o
 
@@ -26,6 +26,9 @@ $(OBJDIR)/protocol.o: common/protocol.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR)/server_main.o: $(SERVER_SRC)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)/server_session.o: server/src/session.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR)/client_main.o: client/src/main.c
