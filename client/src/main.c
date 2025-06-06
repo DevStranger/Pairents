@@ -192,6 +192,7 @@ int main(int argc, char *argv[]) {
             if (event.type == SDL_QUIT) {
                 running = false;
             } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+                printf("Kliknięto na pozycji x=%d, y=%d\n", event.button.x, event.button.y);
                 int clicked = check_button_click(event.button.x, event.button.y);
                 if (clicked != -1 && session_id != -1) {
                     printf("Kliknięto: %s\n", button_labels[clicked]);
