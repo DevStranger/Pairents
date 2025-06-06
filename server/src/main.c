@@ -75,10 +75,10 @@ void *client_listener(void *arg) {
         const char *action = action_json->valuestring;
 
        // Znajdujemy sesję po game_id
-    pthread_mutex_lock(&queue_mutex);
-    for (int i = 0; i < session_count; i++) {
-        if (strcmp(sessions[i].game_id, gid) == 0) {
-            GameSession *s = &sessions[i];
+        pthread_mutex_lock(&queue_mutex);
+        for (int i = 0; i < session_count; i++) {
+            if (strcmp(sessions[i].game_id, gid) == 0) {
+                GameSession *s = &sessions[i];
     
             // Jeśli już czeka na rozstrzygnięcie, nie pozwalamy na dalsze klikanie
             if ((sockfd == s->sock1 && s->action1_ready) ||
