@@ -215,8 +215,14 @@ int main(int argc, char *argv[]) {
             } else if (event.type == SDL_MOUSEBUTTONDOWN) {
                 int clicked = check_button_click(event.button.x, event.button.y);
                 printf("Kliknięto na pozycji x=%d, y=%d\n", event.button.x, event.button.y);
-
-               if (clicked != -1) {
+            
+                // Jeśli game_id jest pusty, ignoruj kliknięcia guzików
+                if (game_id[0] == '\0') {
+                    printf("[CLIENT] Nie można kliknąć guzików - brak game_id\n");
+                    continue;  // pomiń dalszą obsługę kliknięcia
+                }
+            
+                if (clicked != -1) {
                     printf("Kliknięto guzik: %s\n", button_labels[clicked]);
                 
                     last_clicked_button = clicked;
