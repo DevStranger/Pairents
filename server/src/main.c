@@ -16,17 +16,15 @@
 #define MAX_CLIENTS 100
 #define MAX_SESSIONS 50
 
-// --- Struktura sesji gry ---
 typedef struct {
-    int sock1, sock2;           // sockety dwóch graczy
-    char game_id[32];           // unikalny ID sesji
-    char action1[32];           // akcja gracza 1
-    char action2[32];           // akcja gracza 2
-    bool resolved;              // czy akcje są zsynchronizowane
-    time_t window_start;        // czas rozpoczęcia okna synchronizacji
+    int sock1, sock2;
+    char game_id[32];
+    char action1[32];
+    char action2[32];
+    bool resolved;
     bool action1_ready;
     bool action2_ready;
-
+    time_t window_start;
 } GameSession;
 
 static GameSession sessions[MAX_SESSIONS];
@@ -37,23 +35,22 @@ static int queue_len = 0;
 
 static pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// Funkcja nadaje unikalny game_id dla sesji na podstawie indeksu
 void assign_game_id(char *buffer, int index) {
     snprintf(buffer, 32, "PAIR_%03d", index);
 }
 
-// --- Odbieranie akcji od klienta i synchronizacja ---
 void *client_listener(void *arg) {
     int sockfd = *(int *)arg;
     free(arg);
 
     char buffer[1024];
+
     while (1) {
         int len = recv_msg(sockfd, buffer, sizeof(buffer));
         if (len <= 0) {
             printf("[DISCONNECT] Client disconnected (sock=%d)\n", sockfd);
             close(sockfd);
-            break;
+            return NULL;
         }
 
         cJSON *json = cJSON_Parse(buffer);
@@ -62,7 +59,6 @@ void *client_listener(void *arg) {
             continue;
         }
 
-        // Pobieramy game_id i action z JSON
         const cJSON *game_id_json = cJSON_GetObjectItemCaseSensitive(json, "game_id");
         const cJSON *action_json = cJSON_GetObjectItemCaseSensitive(json, "action");
 
@@ -74,48 +70,50 @@ void *client_listener(void *arg) {
         const char *gid = game_id_json->valuestring;
         const char *action = action_json->valuestring;
 
-       // Znajdujemy sesję po game_id
         pthread_mutex_lock(&queue_mutex);
+
         for (int i = 0; i < session_count; i++) {
-            if (strcmp(sessions[i].game_id, gid) == 0) {
-                GameSession *s = &sessions[i];
-    
-            // Jeśli już czeka na rozstrzygnięcie, nie pozwalamy na dalsze klikanie
+            GameSession *s = &sessions[i];
+            if (strcmp(s->game_id, gid) != 0) continue;
+
+            // Blokuj wielokrotne akcje
             if ((sockfd == s->sock1 && s->action1_ready) ||
                 (sockfd == s->sock2 && s->action2_ready)) {
                 send_msg(sockfd, "{\"status\":\"wait\"}");
                 break;
             }
-    
-            // Zapisujemy akcję i oznaczamy jako gotową
+
+            // Zapisz akcję
             if (sockfd == s->sock1) {
                 strncpy(s->action1, action, sizeof(s->action1));
                 s->action1_ready = true;
+                printf("[RECV] Player1 (%d) chose: %s\n", sockfd, s->action1);
             } else if (sockfd == s->sock2) {
                 strncpy(s->action2, action, sizeof(s->action2));
                 s->action2_ready = true;
+                printf("[RECV] Player2 (%d) chose: %s\n", sockfd, s->action2);
             }
-    
-            // Jeśli obaj wybrali akcje
+
+            // Jeśli obaj wybrali akcję
             if (s->action1_ready && s->action2_ready) {
                 if (strcmp(s->action1, s->action2) == 0) {
                     s->resolved = true;
-    
+
                     char response[128];
                     snprintf(response, sizeof(response),
                              "{\"status\":\"accepted\",\"action\":\"%s\"}", s->action1);
                     send_msg(s->sock1, response);
                     send_msg(s->sock2, response);
-    
+
                     printf("[SYNC] Action '%s' accepted for session %s\n", s->action1, s->game_id);
                 } else {
                     send_msg(s->sock1, "{\"status\":\"mismatch\"}");
                     send_msg(s->sock2, "{\"status\":\"mismatch\"}");
-    
+
                     printf("[SYNC] Mismatch: %s vs %s in session %s\n",
                            s->action1, s->action2, s->game_id);
                 }
-    
+
                 // Reset tury
                 s->action1_ready = false;
                 s->action2_ready = false;
@@ -123,65 +121,60 @@ void *client_listener(void *arg) {
                 s->action2[0] = '\0';
                 s->resolved = false;
             }
-            break;
-        }
-    }
-    pthread_mutex_unlock(&queue_mutex);
 
-    cJSON_Delete(json);
+            break; // Sesja znaleziona i obsłużona
+        }
+
+        pthread_mutex_unlock(&queue_mutex);
+        cJSON_Delete(json);
     }
 
     return NULL;
 }
 
-// --- Obsługa nowego klienta, parowanie ---
 void *handle_client(void *arg) {
     int sockfd = *(int *)arg;
     free(arg);
-    sessions[session_count].action1_ready = false;
-    sessions[session_count].action2_ready = false;
 
     printf("[CONNECT] Client connected: sock=%d\n", sockfd);
 
     pthread_mutex_lock(&queue_mutex);
 
-    // Dodaj klienta do kolejki
     client_queue[queue_len++] = sockfd;
 
     if (queue_len >= 2) {
         int client1 = client_queue[0];
         int client2 = client_queue[1];
-
-        // Usuwamy pierwsze 2 z kolejki
         memmove(client_queue, client_queue + 2, sizeof(int) * (queue_len - 2));
         queue_len -= 2;
 
-        // Tworzymy nową sesję
         if (session_count >= MAX_SESSIONS) {
             fprintf(stderr, "[ERROR] Max sessions reached\n");
-            pthread_mutex_unlock(&queue_mutex);
             close(client1);
             close(client2);
+            pthread_mutex_unlock(&queue_mutex);
             return NULL;
         }
 
-        assign_game_id(sessions[session_count].game_id, session_count);
-        sessions[session_count].sock1 = client1;
-        sessions[session_count].sock2 = client2;
-        sessions[session_count].action1[0] = '\0';
-        sessions[session_count].action2[0] = '\0';
-        sessions[session_count].resolved = false;
-        sessions[session_count].window_start = time(NULL);
+        GameSession *s = &sessions[session_count];
+        assign_game_id(s->game_id, session_count);
+        s->sock1 = client1;
+        s->sock2 = client2;
+        s->action1_ready = false;
+        s->action2_ready = false;
+        s->resolved = false;
+        s->action1[0] = '\0';
+        s->action2[0] = '\0';
+        s->window_start = time(NULL);
 
-        // Powiadamiamy graczy o sparowaniu
-        char game_msg[128];
-        snprintf(game_msg, sizeof(game_msg),
-                 "{\"status\":\"paired\",\"game_id\":\"%s\"}",
-                 sessions[session_count].game_id);
-        send_msg(client1, game_msg);
-        send_msg(client2, game_msg);
+        char msg[128];
+        snprintf(msg, sizeof(msg), "{\"status\":\"paired\",\"game_id\":\"%s\"}", s->game_id);
+        send_msg(client1, msg);
+        send_msg(client2, msg);
 
-        // Uruchamiamy listenerów dla obu klientów sesji
+        printf("[PAIR] Created session %s with clients %d and %d\n",
+               s->game_id, client1, client2);
+
         int *c1 = malloc(sizeof(int));
         int *c2 = malloc(sizeof(int));
         *c1 = client1;
@@ -193,14 +186,10 @@ void *handle_client(void *arg) {
         pthread_detach(tid1);
         pthread_detach(tid2);
 
-        printf("[PAIR] New game session created: %s (clients %d, %d)\n",
-               sessions[session_count].game_id, client1, client2);
-
         session_count++;
     }
 
     pthread_mutex_unlock(&queue_mutex);
-
     return NULL;
 }
 
@@ -209,7 +198,6 @@ int main() {
     struct sockaddr_in addr;
     socklen_t addrlen = sizeof(addr);
 
-    // Tworzymy socket serwera
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) {
         perror("socket");
@@ -232,7 +220,6 @@ int main() {
 
     printf("[SERVER] Listening on port %d...\n", PORT);
 
-    // Główna pętla akceptująca klientów
     while (1) {
         client_fd = accept(server_fd, (struct sockaddr *)&addr, &addrlen);
         if (client_fd < 0) {
@@ -240,7 +227,6 @@ int main() {
             continue;
         }
 
-        // Obsługa klienta w osobnym wątku
         int *client_sock = malloc(sizeof(int));
         *client_sock = client_fd;
 
@@ -251,6 +237,7 @@ int main() {
             free(client_sock);
             continue;
         }
+
         pthread_detach(tid);
     }
 
