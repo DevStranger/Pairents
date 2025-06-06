@@ -16,8 +16,11 @@
 
 // --- GUI ---
 #define BUTTON_COUNT 5
+
 SDL_Rect buttons[BUTTON_COUNT];
-const char *button_labels[BUTTON_COUNT] = {"🍓 Feed", "📖 Read", "💤 Sleep", "🤗 Hug", "🎡 Play"};
+
+const char *button_symbols[BUTTON_COUNT] = { "🍓", "📖", "💤", "🤗", "🎡" };
+const char *button_labels[BUTTON_COUNT]  = { "Feed", "Read", "Sleep", "Hug", "Play" };
 
 // --- Networking ---
 int sockfd = -1;
@@ -33,7 +36,7 @@ void draw_bar(SDL_Renderer *r, int x, int y, int w, int h, int value, SDL_Color 
 void draw_text(SDL_Renderer *r, TTF_Font *font, const char *text, int x, int y, SDL_Color color);
 void draw_ascii_art(SDL_Renderer *r, TTF_Font *font, const char *ascii_art, int x, int y, SDL_Color color);
 char* load_ascii_art_from_file(const char *filepath);
-void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font_special, SDL_Color color);
+void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font_emoji, SDL_Color color);
 int check_button_click(int x, int y);
 
 // --- Sieć: wysyłanie i odbieranie ---
@@ -348,7 +351,7 @@ void draw_ascii_art(SDL_Renderer *r, TTF_Font *font, const char *ascii_art, int 
     }
 }
 
-void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font_special, SDL_Color color) {
+void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font_emoji, SDL_Color color) {
     for (int i = 0; i < BUTTON_COUNT; i++) {
         buttons[i].x = 20 + i * 160;
         buttons[i].y = 420;
@@ -360,24 +363,18 @@ void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDrawRect(renderer, &buttons[i]);
 
-        const char *label = button_labels[i];
-
-        // Pierwszy znak jako oddzielny string
-        char first_char[2] = { label[0], '\0' };
-        const char *rest = label + 1;
-
         int x = buttons[i].x + 10;
         int y = buttons[i].y + 10;
 
-        // Najpierw narysuj pierwszy znak specjalną czcionką
-        draw_text(renderer, font_special, first_char, x, y, color);
+        // Narysuj symbol (np. emoji)
+        draw_text(renderer, font_emoji, button_symbols[i], x, y, color);
 
-        // Oblicz szerokość pierwszego znaku, by przesunąć resztę
-        int w_first = 0, h_first = 0;
-        TTF_SizeText(font_special, first_char, &w_first, &h_first);
+        // Oblicz szerokość symbolu, żeby przesunąć tekst
+        int w_symbol = 0, h_symbol = 0;
+        TTF_SizeText(font_emoji, button_symbols[i], &w_symbol, &h_symbol);
 
-        // Następnie resztę tekstu zwykłą czcionką
-        draw_text(renderer, font_regular, rest, x + w_first, y, color);
+        // Narysuj nazwę przycisku za symbolem
+        draw_text(renderer, font_regular, button_labels[i], x + w_symbol + 5, y, color);
     }
 }
 
