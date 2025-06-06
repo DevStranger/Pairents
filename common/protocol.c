@@ -22,3 +22,11 @@ int recv_msg(int sockfd, char *buffer, int bufsize) {
 	buffer[i] = '\0';
 	return i;
 }
+
+void serialize_message(const Message* msg, char* buffer) {
+    memcpy(buffer, msg, sizeof(Message));
+}
+
+void deserialize_message(const char* buffer, Message* msg) {
+    memcpy(msg, buffer, sizeof(Message));
+}
