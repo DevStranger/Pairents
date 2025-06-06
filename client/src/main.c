@@ -8,8 +8,8 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include "creature.h"
-#include "protocol.h"  // zakładam, że masz ten plik z definicjami Message itd.
-#include "cJSON.h"     // do parsowania JSON, jak było wcześniej
+#include "protocol.h" 
+#include "cJSON.h"     
 
 #define WINDOW_WIDTH 840
 #define WINDOW_HEIGHT 480
@@ -22,7 +22,7 @@ const char *button_labels[BUTTON_COUNT] = {"🍓 Feed", "📖 Read", "💤 Sleep
 // --- Networking ---
 int sockfd = -1;
 int session_id = -1;
-int player_id = 0;  // możesz zmieniać, jeśli dostaniesz od serwera
+int player_id = 0;  
 bool running = true;
 
 // ASCII art
@@ -78,7 +78,6 @@ void handle_server_message(const char *json_str) {
         case MSG_ACTION:
             if (cJSON_IsString(payload_json)) {
                 printf("[CLIENT] Otrzymano akcję drugiego gracza: %s\n", payload_json->valuestring);
-                // Możesz zareagować w GUI, np. zmienić stan lub wyświetlić komunikat
             }
             break;
 
@@ -199,7 +198,7 @@ int main(int argc, char *argv[]) {
                     msg.type = MSG_ACTION;
                     msg.session_id = session_id;
                     msg.player_id = player_id;
-                    msg.action_code = clicked;  // np. index przycisku jako kod akcji
+                    msg.action_code = clicked;  
                     snprintf(msg.payload, sizeof(msg.payload), "%s", button_labels[clicked]);
 
                     send_message(&msg);
@@ -247,16 +246,16 @@ int main(int argc, char *argv[]) {
 
         draw_text(renderer, font_emoji, "🌱", 20, 160, white);
         draw_text(renderer, font_text, "Growth", 60, 160, white);
-        draw_bar(renderer, 155, 162, 200, 16, creature.cuddle, pink);
+        draw_bar(renderer, 155, 162, 200, 16, creature.growth, pink);
         char cuddle_value[8];
-        sprintf(cuddle_value, "%d%%", creature.cuddle);
+        sprintf(cuddle_value, "%d%%", creature.growth);
         draw_text(renderer, font_text, cuddle_value, 360, 160, white);
 
         draw_text(renderer, font_emoji, "❤️", 20, 190, white);
         draw_text(renderer, font_text, "Love", 60, 190, white);
-        draw_bar(renderer, 155, 192, 200, 16, creature.magic, orange);
+        draw_bar(renderer, 155, 192, 200, 16, creature.love, orange);
         char magic_value[8];
-        sprintf(magic_value, "%d%%", creature.magic);
+        sprintf(magic_value, "%d%%", creature.love);
         draw_text(renderer, font_text, magic_value, 360, 190, white);
 
         // Rysuj ASCII art (stworzonko)
