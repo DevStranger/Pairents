@@ -27,6 +27,7 @@ int sockfd = -1;
 int session_id = -1;
 int player_id = 0;  
 bool running = true;
+char game_id[64] = {0};
 
 // Obsługa guzików
 int last_clicked_button = -1;
@@ -63,6 +64,7 @@ void handle_server_message(const char *json_str) {
     cJSON *type_json = cJSON_GetObjectItemCaseSensitive(json, "type");
     cJSON *session_json = cJSON_GetObjectItemCaseSensitive(json, "session_id");
     cJSON *payload_json = cJSON_GetObjectItemCaseSensitive(json, "payload");
+    cJSON *status_json = cJSON_GetObjectItemCaseSensitive(json, "status");
 
     if (!cJSON_IsNumber(type_json)) {
         cJSON_Delete(json);
@@ -78,7 +80,9 @@ void handle_server_message(const char *json_str) {
                 printf("[CLIENT] Połączono w sesję ID=%d\n", session_id);
             }
             if (cJSON_IsString(payload_json)) {
-                printf("[CLIENT] Game ID: %s\n", payload_json->valuestring);
+                strncpy(game_id, payload_json->valuestring, sizeof(game_id) - 1);
+                game_id[sizeof(game_id) - 1] = '\0';
+                printf("[CLIENT] Game ID zapisany: %s\n", game_id);
             }
             break;
 
@@ -97,6 +101,19 @@ void handle_server_message(const char *json_str) {
         default:
             printf("[CLIENT] Nieznany typ wiadomości: %d\n", msg_type);
             break;
+    }
+
+    if (cJSON_IsString(status_json)) {
+        const char *status = status_json->valuestring;
+        if (strcmp(status, "accepted") == 0) {
+            printf("[CLIENT] Akcja zaakceptowana.\n");
+        } else if (strcmp(status, "wait") == 0) {
+            printf("[CLIENT] Czekaj na drugiego gracza.\n");
+        } else if (strcmp(status, "mismatch") == 0) {
+            printf("[CLIENT] Akcje nie pasują (mismatch).\n");
+        } else {
+            printf("[CLIENT] Nieznany status: %s\n", status);
+        }
     }
 
     cJSON_Delete(json);
@@ -199,12 +216,12 @@ int main(int argc, char *argv[]) {
                 int clicked = check_button_click(event.button.x, event.button.y);
                 printf("Kliknięto na pozycji x=%d, y=%d\n", event.button.x, event.button.y);
 
-                if (clicked != -1) {
+               if (clicked != -1) {
                     printf("Kliknięto guzik: %s\n", button_labels[clicked]);
-            
+                
                     last_clicked_button = clicked;
                     last_click_time = SDL_GetTicks();
-            
+                
                     if (session_id != -1) {
                         Message msg = {0};
                         msg.type = MSG_ACTION;
@@ -212,7 +229,12 @@ int main(int argc, char *argv[]) {
                         msg.player_id = player_id;
                         msg.action_code = clicked;
                         snprintf(msg.payload, sizeof(msg.payload), "%s", button_labels[clicked]);
-                        send_message(&msg);
+                        
+                        if (strlen(msg.payload) > 0) {
+                            send_message(&msg);
+                        } else {
+                            printf("[CLIENT] Nie wysłano wiadomości - pusty payload\n");
+                        }
                     }
                 }
             }
