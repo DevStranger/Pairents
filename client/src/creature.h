@@ -9,6 +9,7 @@ typedef struct {
 	int growth;		//0-brak rozwoju, 100-rozwiniety
 	int love;		//0-samotny, 100-kochany i kochajacy
 	int level;		//ogolny poziom gry
+	time_t last_update;	//czas ostatniej zmiany wskaźników
 } Creature;
 
 void init_creature(Creature *c);
