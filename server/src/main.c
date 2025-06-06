@@ -1,5 +1,3 @@
-// server/main.c
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,7 +58,7 @@ void *client_listener(void *arg) {
         }
 
         const cJSON *game_id_json = cJSON_GetObjectItemCaseSensitive(json, "game_id");
-        const cJSON *action_json = cJSON_GetObjectItemCaseSensitive(json, "action");
+        const cJSON *action_json  = cJSON_GetObjectItemCaseSensitive(json, "action");
 
         if (!cJSON_IsString(game_id_json) || !cJSON_IsString(action_json)) {
             cJSON_Delete(json);
@@ -76,7 +74,7 @@ void *client_listener(void *arg) {
             GameSession *s = &sessions[i];
             if (strcmp(s->game_id, gid) != 0) continue;
 
-            // Blokuj wielokrotne akcje
+            // Ignoruj wielokrotne kliknięcia
             if ((sockfd == s->sock1 && s->action1_ready) ||
                 (sockfd == s->sock2 && s->action2_ready)) {
                 send_msg(sockfd, "{\"status\":\"wait\"}");
@@ -94,22 +92,18 @@ void *client_listener(void *arg) {
                 printf("[RECV] Player2 (%d) chose: %s\n", sockfd, s->action2);
             }
 
-            // Jeśli obaj wybrali akcję
+            // Sprawdź, czy obaj wybrali już akcję
             if (s->action1_ready && s->action2_ready) {
                 if (strcmp(s->action1, s->action2) == 0) {
-                    s->resolved = true;
-
                     char response[128];
                     snprintf(response, sizeof(response),
                              "{\"status\":\"accepted\",\"action\":\"%s\"}", s->action1);
                     send_msg(s->sock1, response);
                     send_msg(s->sock2, response);
-
                     printf("[SYNC] Action '%s' accepted for session %s\n", s->action1, s->game_id);
                 } else {
                     send_msg(s->sock1, "{\"status\":\"mismatch\"}");
                     send_msg(s->sock2, "{\"status\":\"mismatch\"}");
-
                     printf("[SYNC] Mismatch: %s vs %s in session %s\n",
                            s->action1, s->action2, s->game_id);
                 }
@@ -120,9 +114,12 @@ void *client_listener(void *arg) {
                 s->action1[0] = '\0';
                 s->action2[0] = '\0';
                 s->resolved = false;
+            } else {
+                // Tylko jeden gracz wykonał akcję — drugi jeszcze nie
+                send_msg(sockfd, "{\"status\":\"wait\"}");
             }
 
-            break; // Sesja znaleziona i obsłużona
+            break; // znaleziono sesję
         }
 
         pthread_mutex_unlock(&queue_mutex);
