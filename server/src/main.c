@@ -38,8 +38,8 @@ void assign_game_id(char *buffer, int index) {
 }
 
 void *client_listener(void *arg) {
-    printf("[DEBUG] Listener active for sock=%d\n", sockfd); // do usuniecia
     int sockfd = *(int *)arg;
+    printf("[DEBUG] Listener active for sock=%d\n", sockfd); // do usuniecia
     free(arg);
 
     char buffer[1024];
