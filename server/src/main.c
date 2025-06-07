@@ -97,14 +97,14 @@ void *client_listener(void *arg) {
             if (s->action1_ready && s->action2_ready) {
                 if (strcmp(s->action1, s->action2) == 0) {
                     char response[128];
-                    snprintf(response, sizeof(response),
-                             "{\"status\":\"accepted\",\"action\":\"%s\"}", s->action1);
+                   snprintf(response, sizeof(response),
+                         "{\"type\":%d,\"status\":\"accepted\",\"action\":\"%s\"}", MSG_ACTION_RESULT, s->action1);
                     send_msg(s->sock1, response);
                     send_msg(s->sock2, response);
                     printf("[SYNC] Action '%s' accepted for session %s\n", s->action1, s->game_id);
                 } else {
-                    send_msg(s->sock1, "{\"status\":\"mismatch\"}");
-                    send_msg(s->sock2, "{\"status\":\"mismatch\"}");
+                    send_msg(s->sock1, "{\"type\":3,\"status\":\"mismatch\"}");
+                    send_msg(s->sock2, "{\"type\":3,\"status\":\"mismatch\"}");
                     printf("[SYNC] Mismatch: %s vs %s in session %s\n",
                            s->action1, s->action2, s->game_id);
                 }
@@ -117,7 +117,7 @@ void *client_listener(void *arg) {
         
             } else {
                 // Tylko jeden gracz wybrał — drugi jeszcze nie
-                send_msg(sockfd, "{\"status\":\"wait\"}");
+                send_msg(sockfd, "{\"type\":3,\"status\":\"wait\"}");
             }
         
             break; // znaleziono sesję - wyjdź z pętli
