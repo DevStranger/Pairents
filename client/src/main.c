@@ -83,7 +83,9 @@ void handle_server_message(const char *json_str) {
                 strncpy(game_id, payload_json->valuestring, sizeof(game_id) - 1);
                 game_id[sizeof(game_id) - 1] = '\0';
                 pthread_mutex_unlock(&session_mutex);
-            
+        
+                can_choose_action = true;  // po przydzieleniu sesji można już wybierać akcje
+        
                 printf("[CLIENT] Połączono w sesję ID=%d\n", session_id);
                 printf("[CLIENT] Game ID zapisany: %s\n", game_id);
             }
@@ -106,20 +108,22 @@ void handle_server_message(const char *json_str) {
             break;
     }
 
-    if (cJSON_IsString(status_json)) {
+   if (cJSON_IsString(status_json)) {
         const char *status = status_json->valuestring;
+        pthread_mutex_lock(&session_mutex);
         if (strcmp(status, "accepted") == 0) {
             printf("[CLIENT] Akcja zaakceptowana.\n");
-            can_choose_action = true;  // można wybierać kolejną akcję
+            can_choose_action = true;
         } else if (strcmp(status, "wait") == 0) {
             printf("[CLIENT] Czekaj na drugiego gracza.\n");
-            can_choose_action = false; // czekaj, blokuj wybór
+            can_choose_action = false;
         } else if (strcmp(status, "mismatch") == 0) {
             printf("[CLIENT] Akcje nie pasują (mismatch).\n");
-            can_choose_action = true;  // można wybrać ponownie
+            can_choose_action = true;
         } else {
             printf("[CLIENT] Nieznany status: %s\n", status);
         }
+        pthread_mutex_unlock(&session_mutex);
     }
     cJSON_Delete(json);
 }
@@ -220,23 +224,27 @@ int main(int argc, char *argv[]) {
             } else if (event.type == SDL_MOUSEBUTTONDOWN) {
                 int clicked = check_button_click(event.button.x, event.button.y);
                 printf("Kliknięto na pozycji x=%d, y=%d\n", event.button.x, event.button.y);
-
-                pthread_mutex_t session_mutex = PTHREAD_MUTEX_INITIALIZER;
                 
                 // Jeśli game_id jest pusty, ignoruj kliknięcia guzików
-                if (game_id[0] == '\0') {
-                    printf("[CLIENT] Nie można kliknąć guzików - brak game_id\n");
+                pthread_mutex_lock(&session_mutex);
+                bool can_click = (session_id != -1) && (game_id[0] != '\0') && can_choose_action;
+                pthread_mutex_unlock(&session_mutex);
+                
+                if (!can_click) {
+                    printf("[CLIENT] Nie możesz kliknąć guzików - brak sesji lub czekaj na drugiego gracza.\n");
                     continue;
                 }
-                
+
                 if (clicked != -1) {
                     if (!can_choose_action) {
                         printf("[CLIENT] Nie możesz wybrać akcji teraz, czekaj na drugiego gracza.\n");
                     } else {
-                        last_clicked_button = clicked;
-                        last_click_time = SDL_GetTicks();
+                        if (session_id == -1) {
+                            printf("[CLIENT] Nie jesteś jeszcze w sesji, czekaj na parowanie.\n");
+                        } else {
+                            last_clicked_button = clicked;
+                            last_click_time = SDL_GetTicks();
                 
-                        if (session_id != -1) {
                             Message msg = {0};
                             msg.type = MSG_ACTION;
                             msg.session_id = session_id;
@@ -245,7 +253,9 @@ int main(int argc, char *argv[]) {
                             snprintf(msg.payload, sizeof(msg.payload), "%s", button_labels[clicked]);
                 
                             send_message(&msg);
-                            can_choose_action = false;  // blokuj wybór kolejnych akcji do czasu odpowiedzi serwera
+                
+                            can_choose_action = false;  // blokuj dalsze wybory do czasu odpowiedzi
+                            printf("[CLIENT] Wysłano akcję: %s, czekaj na odpowiedź serwera.\n", button_labels[clicked]);
                         }
                     }
                 }
