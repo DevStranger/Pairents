@@ -125,7 +125,7 @@ void handle_server_message(const char *json_str) {
             break;
     }
 
-    if (cJSON_IsString(status_json)) {
+     if (cJSON_IsString(status_json)) {
         const char *status = status_json->valuestring;
         pthread_mutex_lock(&session_mutex);
         if (strcmp(status, "accepted") == 0) {
@@ -146,7 +146,6 @@ void handle_server_message(const char *json_str) {
 }
 
 void *receive_thread(void *arg) {
-    (void)arg;
     char buffer[MAX_MSG_LEN];
     while (running) {
         int len = recv(sockfd, buffer, sizeof(buffer) - 1, 0);
@@ -225,13 +224,13 @@ int main(int argc, char *argv[]) {
     init_creature(&creature);
     Uint32 last_update = SDL_GetTicks();
 
-    SDL_Color white  = {255, 255, 255, 255};
-    SDL_Color green  = {0, 200, 0, 255};
-    SDL_Color blue   = {0, 100, 255, 255};
-    SDL_Color red    = {255, 50, 50, 255};
-    SDL_Color yellow = {255, 255, 0, 255};
-    SDL_Color pink   = {255, 105, 180, 255};
-    SDL_Color orange = {255, 140, 0, 255};
+    SDL_Color white  = {255, 255, 255};
+    SDL_Color green  = {0, 200, 0};
+    SDL_Color blue   = {0, 100, 255};
+    SDL_Color red    = {255, 50, 50};
+    SDL_Color yellow = {255, 255, 0};
+    SDL_Color pink   = {255, 105, 180};
+    SDL_Color orange = {255, 140, 0};
 
     SDL_Event event;
 
@@ -240,30 +239,36 @@ int main(int argc, char *argv[]) {
             if (event.type == SDL_QUIT) {
                 running = false;
             } else if (event.type == SDL_MOUSEBUTTONDOWN) {
-                    int clicked = check_button_click(event.button.x, event.button.y);
-                    printf("Kliknięto na pozycji x=%d, y=%d\n", event.button.x, event.button.y);
+                int clicked = check_button_click(event.button.x, event.button.y);
+                printf("Kliknięto na pozycji x=%d, y=%d\n", event.button.x, event.button.y);
                 
+                // Jeśli game_id jest pusty, ignoruj kliknięcia guzików
+                pthread_mutex_lock(&session_mutex);
+                bool can_click = (session_id != -1) && (game_id[0] != '\0') && (state == READY_TO_CHOOSE || state == ACTION_MISMATCH || state == ACTION_ACCEPTED);
+                pthread_mutex_unlock(&session_mutex);
+                
+                if (!can_click) {
+                    printf("[CLIENT] Nie możesz kliknąć guzików - brak sesji lub czekaj na drugiego gracza.\n");
+                    continue;
+                }
+
+                if (clicked != -1) {
                     pthread_mutex_lock(&session_mutex);
-                    bool can_click = (session_id != -1) && (game_id[0] != '\0') && (state == READY_TO_CHOOSE);
+                    bool can_click = (session_id != -1) && (game_id[0] != '\0') && (state == READY_TO_CHOOSE || state == ACTION_MISMATCH || state == ACTION_ACCEPTED);
                     pthread_mutex_unlock(&session_mutex);
                 
                     if (!can_click) {
-                        printf("[CLIENT] Nie możesz kliknąć guzików - brak sesji lub czekaj na drugiego gracza.\n");
-                        continue;
-                    }
-                
-                    if (clicked != -1) {
+                        printf("[CLIENT] Nie możesz wybrać akcji teraz, czekaj na drugiego gracza.\n");
+                    } else {
                         last_clicked_button = clicked;
                         last_click_time = SDL_GetTicks();
                 
                         Message msg = {0};
                         msg.type = MSG_ACTION;
-                
                         pthread_mutex_lock(&session_mutex);
                         msg.session_id = session_id;
                         msg.player_id = player_id;
                         pthread_mutex_unlock(&session_mutex);
-                
                         msg.action_code = clicked;
                         snprintf(msg.payload, sizeof(msg.payload), "%s", button_labels[clicked]);
                 
@@ -443,13 +448,15 @@ void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font
         int x = buttons[i].x + 10;
         int y = buttons[i].y + 10;
 
-        // Rysowanie symbolu emoji
         draw_text(renderer, font_emoji, button_symbols[i], x, y, color);
 
-        // Rysowanie etykiety tekstowej obok emoji
-        draw_text(renderer, font_regular, button_labels[i], x + 30, y, color);
-    }
-}
+        int w_symbol = 0, h_symbol = 0;
+        TTF_SizeText(font_emoji, button_symbols[i], &w_symbol, &h_symbol);
+
+        draw_text(renderer, font_regular, button_labels[i], x + w_symbol + 5, y, color);
+    }  
+
+}  
 
 int check_button_click(int x, int y) {
     for (int i = 0; i < BUTTON_COUNT; i++) {
@@ -459,4 +466,3 @@ int check_button_click(int x, int y) {
     }
     return -1;
 }
-
