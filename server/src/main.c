@@ -45,6 +45,7 @@ void *client_listener(void *arg) {
 
     while (1) {
         int len = recv_msg(sockfd, buffer, sizeof(buffer));
+        printf("[INFO] Received from sock=%d: %s\n", sockfd, buffer); //do usunięcia potem lol
         if (len <= 0) {
             printf("[DISCONNECT] Client disconnected (sock=%d)\n", sockfd);
             close(sockfd);
@@ -74,25 +75,26 @@ void *client_listener(void *arg) {
             GameSession *s = &sessions[i];
             if (strcmp(s->game_id, gid) != 0) continue;
         
-            // Tu ignorujesz wielokrotne kliknięcia (możesz zostawić)
+            // ignorujemy wielokrotnie kliknięcia
             if ((sockfd == s->sock1 && s->action1_ready) ||
                 (sockfd == s->sock2 && s->action2_ready)) {
                 send_msg(sockfd, "{\"status\":\"wait\"}");
                 break;
             }
-        
-            // Zapisz akcję
+            
+            // zapisujemy wybraną akcję
             if (sockfd == s->sock1) {
-                strncpy(s->action1, action, sizeof(s->action1));
+                strncpy(s->action1, action, sizeof(s->action1) - 1);
+                s->action1[sizeof(s->action1) - 1] = '\0';
                 s->action1_ready = true;
                 printf("[RECV] Player1 (%d) chose: %s\n", sockfd, s->action1);
             } else if (sockfd == s->sock2) {
-                strncpy(s->action2, action, sizeof(s->action2));
+                strncpy(s->action2, action, sizeof(s->action2) - 1);
+                s->action2[sizeof(s->action2) - 1] = '\0';
                 s->action2_ready = true;
                 printf("[RECV] Player2 (%d) chose: %s\n", sockfd, s->action2);
             }
         
-            // **Tu wstaw ten fragment — czyli sprawdzenie, czy obaj gracze wybrali i wysłanie statusu**
             if (s->action1_ready && s->action2_ready) {
                 if (strcmp(s->action1, s->action2) == 0) {
                     char response[128];
