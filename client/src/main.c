@@ -146,6 +146,7 @@ void handle_server_message(const char *json_str) {
 }
 
 void *receive_thread(void *arg) {
+    (void)arg;
     char buffer[MAX_MSG_LEN];
     while (running) {
         int len = recv(sockfd, buffer, sizeof(buffer) - 1, 0);
@@ -224,13 +225,13 @@ int main(int argc, char *argv[]) {
     init_creature(&creature);
     Uint32 last_update = SDL_GetTicks();
 
-    SDL_Color white  = {255, 255, 255};
-    SDL_Color green  = {0, 200, 0};
-    SDL_Color blue   = {0, 100, 255};
-    SDL_Color red    = {255, 50, 50};
-    SDL_Color yellow = {255, 255, 0};
-    SDL_Color pink   = {255, 105, 180};
-    SDL_Color orange = {255, 140, 0};
+    SDL_Color white  = {255, 255, 255, 255};
+    SDL_Color green  = {0, 200, 0, 255};
+    SDL_Color blue   = {0, 100, 255, 255};
+    SDL_Color red    = {255, 50, 50, 255};
+    SDL_Color yellow = {255, 255, 0, 255};
+    SDL_Color pink   = {255, 105, 180, 255};
+    SDL_Color orange = {255, 140, 0, 255};
 
     SDL_Event event;
 
