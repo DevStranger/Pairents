@@ -46,6 +46,7 @@ void *client_listener(void *arg) {
     while (1) {
         int len = recv_msg(sockfd, buffer, sizeof(buffer));
         printf("[INFO] Received from sock=%d: %s\n", sockfd, buffer); //do usunięcia potem lol
+        printf("[DEBUG] recv_msg returned %d, buffer: '%s'\n", len, buffer); //do usuniecia
         if (len <= 0) {
             printf("[DISCONNECT] Client disconnected (sock=%d)\n", sockfd);
             close(sockfd);
@@ -167,7 +168,7 @@ void *handle_client(void *arg) {
         s->window_start = time(NULL);
 
         char msg[128];
-       snprintf(msg, sizeof(msg),
+        snprintf(msg, sizeof(msg),
             "{\"type\": %d, \"session_id\": %d, \"payload\": \"%s\", \"status\":\"paired\"}",
             MSG_PAIR, session_count, s->game_id);
         send_msg(client1, msg);
@@ -182,6 +183,8 @@ void *handle_client(void *arg) {
         *c2 = client2;
 
         pthread_t tid1, tid2;
+        printf("[DEBUG] Starting client_listener for sock=%d\n", client1); // do usuniecia
+        printf("[DEBUG] Starting client_listener for sock=%d\n", client2); // do usuniecia
         pthread_create(&tid1, NULL, client_listener, c1);
         pthread_create(&tid2, NULL, client_listener, c2);
         pthread_detach(tid1);
