@@ -34,11 +34,6 @@ pthread_mutex_t session_mutex = PTHREAD_MUTEX_INITIALIZER;
 int last_clicked_button = -1;
 Uint32 last_click_time = 0;
 
-// Obsługa odbierania wiadomości od serwera
-#define RECV_BUFFER_SIZE 4096
-char recv_buffer[RECV_BUFFER_SIZE];
-int recv_len = 0;
-
 // Obsługa stanu klienta
 typedef enum {
     WAITING_FOR_PAIR,
@@ -151,15 +146,16 @@ void handle_server_message(const char *json_str) {
 }
 
 void *receive_thread(void *arg) {
-    char buffer[512];
+    char buffer[MAX_MSG_LEN];
     while (running) {
-        int len = recv(sockfd, buffer, sizeof(buffer), 0);
+        int len = recv(sockfd, buffer, sizeof(buffer) - 1, 0);
         if (len <= 0) {
             printf("[CLIENT] Połączenie zerwane lub błąd odbioru.\n");
             running = false;
             break;
         }
-        on_receive_data(buffer, len);
+        buffer[len] = '\0';
+        handle_server_message(buffer);
     }
     return NULL;
 }
@@ -243,39 +239,46 @@ int main(int argc, char *argv[]) {
             if (event.type == SDL_QUIT) {
                 running = false;
             } else if (event.type == SDL_MOUSEBUTTONDOWN) {
-                    int clicked = check_button_click(event.button.x, event.button.y);
-                    printf("Kliknięto na pozycji x=%d, y=%d\n", event.button.x, event.button.y);
+                int clicked = check_button_click(event.button.x, event.button.y);
+                printf("Kliknięto na pozycji x=%d, y=%d\n", event.button.x, event.button.y);
                 
-                    pthread_mutex_lock(&session_mutex);
-                    bool can_click = (session_id != -1) && (game_id[0] != '\0') &&
-                                     (state == READY_TO_CHOOSE || state == ACTION_MISMATCH || state == ACTION_ACCEPTED);
-                    pthread_mutex_unlock(&session_mutex);
+                // Jeśli game_id jest pusty, ignoruj kliknięcia guzików
+                pthread_mutex_lock(&session_mutex);
+                bool can_click = (session_id != -1) && (game_id[0] != '\0') && (state == READY_TO_CHOOSE || state == ACTION_MISMATCH || state == ACTION_ACCEPTED);
+                pthread_mutex_unlock(&session_mutex);
                 
-                    if (!can_click) {
-                        printf("[CLIENT] Nie możesz kliknąć guzików - brak sesji lub czekaj na drugiego gracza.\n");
-                        continue;
-                    }
-                
-                    if (clicked != -1) {
+                if (!can_click) {
+                    printf("[CLIENT] Nie możesz kliknąć guzików - brak sesji lub czekaj na drugiego gracza.\n");
+                    continue;
+                }
+
+                if (clicked != -1) {
                         pthread_mutex_lock(&session_mutex);
+                        bool can_click = (session_id != -1) && (game_id[0] != '\0') && (state == READY_TO_CHOOSE || state == ACTION_MISMATCH || state == ACTION_ACCEPTED);
+                        if (!can_click) {
+                            printf("[CLIENT] Nie możesz wybrać akcji teraz, czekaj na drugiego gracza.\n");
+                            pthread_mutex_unlock(&session_mutex);
+                            continue;
+                        }
+                    
                         last_clicked_button = clicked;
                         last_click_time = SDL_GetTicks();
-                
+                    
                         Message msg = {0};
                         msg.type = MSG_ACTION;
                         msg.session_id = session_id;
                         msg.player_id = player_id;
                         msg.action_code = clicked;
                         snprintf(msg.payload, sizeof(msg.payload), "%s", button_labels[clicked]);
-                
+                    
                         pthread_mutex_unlock(&session_mutex);
-                
+                    
                         send_message(&msg);
-                
+                    
                         pthread_mutex_lock(&session_mutex);
                         state = WAITING_FOR_OPPONENT;
                         pthread_mutex_unlock(&session_mutex);
-                
+                    
                         printf("[CLIENT] Wysłano akcję: %s, czekaj na odpowiedź serwera.\n", button_labels[clicked]);
                     }
                 }
@@ -434,26 +437,27 @@ void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font
         buttons[i].h = 40;
 
         if (i == last_clicked_button && now - last_click_time < 300) {
-            SDL_SetRenderDrawColor(renderer, 70, 70, 120, 255);  // kolor aktywnego kliknięcia
+            SDL_SetRenderDrawColor(renderer, 70, 70, 120, 255);
         } else {
-            SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255);   // domyślny kolor guzika
+            SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
         }
         SDL_RenderFillRect(renderer, &buttons[i]);
 
-        // Rysuj symbol emoji na guziku (wyśrodkowany)
-        int text_width, text_height;
-        TTF_SizeUTF8(font_emoji, button_symbols[i], &text_width, &text_height);
-        int emoji_x = buttons[i].x + (buttons[i].w - text_width) / 2;
-        int emoji_y = buttons[i].y + 4;
-        draw_text(renderer, font_emoji, button_symbols[i], emoji_x, emoji_y, color);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderDrawRect(renderer, &buttons[i]);
 
-        // Rysuj etykietę pod emoji (wyśrodkowaną)
-        TTF_SizeUTF8(font_regular, button_labels[i], &text_width, &text_height);
-        int label_x = buttons[i].x + (buttons[i].w - text_width) / 2;
-        int label_y = buttons[i].y + 24;
-        draw_text(renderer, font_regular, button_labels[i], label_x, label_y, color);
-    }
-}
+        int x = buttons[i].x + 10;
+        int y = buttons[i].y + 10;
+
+        draw_text(renderer, font_emoji, button_symbols[i], x, y, color);
+
+        int w_symbol = 0, h_symbol = 0;
+        TTF_SizeText(font_emoji, button_symbols[i], &w_symbol, &h_symbol);
+
+        draw_text(renderer, font_regular, button_labels[i], x + w_symbol + 5, y, color);
+    }  
+
+}  
 
 int check_button_click(int x, int y) {
     for (int i = 0; i < BUTTON_COUNT; i++) {
@@ -462,27 +466,4 @@ int check_button_click(int x, int y) {
             return i;
     }
     return -1;
-}
-
-void on_receive_data(const char *data, int len) {
-    if (recv_len + len >= RECV_BUFFER_SIZE) {
-        // Bufor przepełniony, resetujemy go dla bezpieczeństwa
-        recv_len = 0;
-    }
-
-    memcpy(recv_buffer + recv_len, data, len);
-    recv_len += len;
-    recv_buffer[recv_len] = '\0';
-
-    char *pos;
-    while ((pos = strchr(recv_buffer, '\n')) != NULL) {
-        *pos = '\0'; // kończymy pojedynczą wiadomość
-
-        handle_server_message(recv_buffer);
-
-        int remaining = recv_len - (pos - recv_buffer + 1);
-        memmove(recv_buffer, pos + 1, remaining);
-        recv_len = remaining;
-        recv_buffer[recv_len] = '\0';
-    }
 }
