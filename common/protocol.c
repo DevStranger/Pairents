@@ -4,21 +4,14 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-int send_msg(int sockfd, const char *json_str) {
-    char msg[MAX_MSG_LEN];
-    snprintf(msg, MAX_MSG_LEN, "%s\n", json_str);
-
-    size_t len = strlen(msg);
-    size_t total_sent = 0;
-
-    while (total_sent < len) {
-        ssize_t sent = send(sockfd, msg + total_sent, len - total_sent, 0);
-        if (sent <= 0) {
-            return -1; // błąd lub rozłączenie
-        }
-        total_sent += sent;
+int send_msg(int sockfd, const char *msg) {
+    printf("[SEND] -> %d: %s\n", sockfd, msg);  
+    int len = strlen(msg);
+    if (send(sockfd, msg, len, 0) != len) {
+        perror("send");
+        return -1;
     }
-    return total_sent;
+    return 0;
 }
 
 int recv_msg(int sockfd, char *buffer, int bufsize) {
