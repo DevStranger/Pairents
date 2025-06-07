@@ -30,9 +30,10 @@ bool running = true;
 char game_id[64] = {0};
 pthread_mutex_t session_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// Obsługa guzików
+// Obsługa guzików i akcji
 int last_clicked_button = -1;
 Uint32 last_click_time = 0;
+bool can_choose_action = false;
 
 // ASCII art
 char *bunny_art = NULL;
@@ -109,15 +110,17 @@ void handle_server_message(const char *json_str) {
         const char *status = status_json->valuestring;
         if (strcmp(status, "accepted") == 0) {
             printf("[CLIENT] Akcja zaakceptowana.\n");
+            can_choose_action = true;  // można wybierać kolejną akcję
         } else if (strcmp(status, "wait") == 0) {
             printf("[CLIENT] Czekaj na drugiego gracza.\n");
+            can_choose_action = false; // czekaj, blokuj wybór
         } else if (strcmp(status, "mismatch") == 0) {
             printf("[CLIENT] Akcje nie pasują (mismatch).\n");
+            can_choose_action = true;  // można wybrać ponownie
         } else {
             printf("[CLIENT] Nieznany status: %s\n", status);
         }
     }
-
     cJSON_Delete(json);
 }
 
@@ -227,23 +230,22 @@ int main(int argc, char *argv[]) {
                 }
                 
                 if (clicked != -1) {
-                    printf("Kliknięto guzik: %s\n", button_labels[clicked]);
-                    
-                    last_clicked_button = clicked;
-                    last_click_time = SDL_GetTicks();
+                    if (!can_choose_action) {
+                        printf("[CLIENT] Nie możesz wybrać akcji teraz, czekaj na drugiego gracza.\n");
+                    } else {
+                        last_clicked_button = clicked;
+                        last_click_time = SDL_GetTicks();
                 
-                    if (session_id != -1) {
-                        Message msg = {0};
-                        msg.type = MSG_ACTION;
-                        msg.session_id = session_id;
-                        msg.player_id = player_id;
-                        msg.action_code = clicked;
-                        snprintf(msg.payload, sizeof(msg.payload), "%s", button_labels[clicked]);
+                        if (session_id != -1) {
+                            Message msg = {0};
+                            msg.type = MSG_ACTION;
+                            msg.session_id = session_id;
+                            msg.player_id = player_id;
+                            msg.action_code = clicked;
+                            snprintf(msg.payload, sizeof(msg.payload), "%s", button_labels[clicked]);
                 
-                        if (strlen(msg.payload) > 0) {
                             send_message(&msg);
-                        } else {
-                            printf("[CLIENT] Nie wysłano wiadomości - pusty payload\n");
+                            can_choose_action = false;  // blokuj wybór kolejnych akcji do czasu odpowiedzi serwera
                         }
                     }
                 }
