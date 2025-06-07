@@ -114,6 +114,7 @@ void *client_listener(void *arg) {
                 // Reset tury
                 s->action1_ready = false;
                 s->action2_ready = false;
+                printf("[RECV] Player%d (%d) chose: %s\n", sockfd == s->sock1 ? 1 : 2, sockfd, action); // do usuniecia
                 s->action1[0] = '\0';
                 s->action2[0] = '\0';
         
