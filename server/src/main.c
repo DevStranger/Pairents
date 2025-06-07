@@ -165,7 +165,7 @@ void *handle_client(void *arg) {
         s->window_start = time(NULL);
 
         char msg[128];
-        snprintf(msg, sizeof(msg),
+       snprintf(msg, sizeof(msg),
             "{\"type\": %d, \"session_id\": %d, \"payload\": \"%s\", \"status\":\"paired\"}",
             MSG_PAIR, session_count, s->game_id);
         send_msg(client1, msg);
