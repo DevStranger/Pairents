@@ -92,6 +92,14 @@ void handle_server_message(const char *json_str) {
                 session_id = session_json->valueint;
                 strncpy(game_id, payload_json->valuestring, sizeof(game_id) - 1);
                 game_id[sizeof(game_id) - 1] = '\0';
+        
+                // Pobierz player_id, jeśli jest dostępny w JSON
+                cJSON *player_id_json = cJSON_GetObjectItemCaseSensitive(json, "player_id");
+                if (cJSON_IsNumber(player_id_json)) {
+                    player_id = player_id_json->valueint;
+                    printf("[CLIENT] Ustawiono player_id: %d\n", player_id);
+                }
+        
                 state = READY_TO_CHOOSE;
                 pthread_mutex_unlock(&session_mutex);
         
@@ -128,7 +136,7 @@ void handle_server_message(const char *json_str) {
             state = WAITING_FOR_OPPONENT;
         } else if (strcmp(status, "mismatch") == 0) {
             printf("[CLIENT] Akcje nie pasują (mismatch).\n");
-            state = ACTION_MISMATCH;
+            state = READY_TO_CHOOSE;
         } else {
             printf("[CLIENT] Nieznany status: %s\n", status);
         }
