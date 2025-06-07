@@ -38,6 +38,7 @@ void assign_game_id(char *buffer, int index) {
 }
 
 void *client_listener(void *arg) {
+    printf("[DEBUG] Listener active for sock=%d\n", sockfd); // do usuniecia
     int sockfd = *(int *)arg;
     free(arg);
 
@@ -45,6 +46,7 @@ void *client_listener(void *arg) {
 
     while (1) {
         int len = recv_msg(sockfd, buffer, sizeof(buffer));
+        printf("[DEBUG] Received message of length %d from sock=%d\n", len, sockfd); // do usuniecia
         if (len <= 0) {
             printf("[DISCONNECT] Client disconnected (sock=%d)\n", sockfd);
             close(sockfd);
@@ -72,11 +74,13 @@ void *client_listener(void *arg) {
 
        for (int i = 0; i < session_count; i++) {
             GameSession *s = &sessions[i];
+            printf("[DEBUG] Comparing actions: '%s' vs '%s'\n", s->action1, s->action2); // do usuniecia
             if (strcmp(s->game_id, gid) != 0) continue;
         
             // ignorujemy wielokrotnie kliknięcia
             if ((sockfd == s->sock1 && s->action1_ready) ||
                 (sockfd == s->sock2 && s->action2_ready)) {
+                printf("[CHECK] Both players ready in session %s (%d, %d)\n", s->game_id, s->sock1, s->sock2); // do usuniecia
                 send_msg(sockfd, "{\"status\":\"wait\"}");
                 break;
             }
