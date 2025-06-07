@@ -35,6 +35,17 @@ int last_clicked_button = -1;
 Uint32 last_click_time = 0;
 bool can_choose_action = false;
 
+// Obsługa stanu klienta
+typedef enum {
+    WAITING_FOR_PAIR,
+    READY_TO_CHOOSE,
+    WAITING_FOR_OPPONENT,
+    ACTION_MISMATCH,
+    ACTION_ACCEPTED
+} ClientState;
+
+ClientState state = WAITING_FOR_PAIR;
+
 // ASCII art
 char *bunny_art = NULL;
 
@@ -82,9 +93,8 @@ void handle_server_message(const char *json_str) {
                 session_id = session_json->valueint;
                 strncpy(game_id, payload_json->valuestring, sizeof(game_id) - 1);
                 game_id[sizeof(game_id) - 1] = '\0';
+                state = READY_TO_CHOOSE;
                 pthread_mutex_unlock(&session_mutex);
-        
-                can_choose_action = true;  // po przydzieleniu sesji można już wybierać akcje
         
                 printf("[CLIENT] Połączono w sesję ID=%d\n", session_id);
                 printf("[CLIENT] Game ID zapisany: %s\n", game_id);
@@ -108,18 +118,18 @@ void handle_server_message(const char *json_str) {
             break;
     }
 
-   if (cJSON_IsString(status_json)) {
+     if (cJSON_IsString(status_json)) {
         const char *status = status_json->valuestring;
         pthread_mutex_lock(&session_mutex);
         if (strcmp(status, "accepted") == 0) {
             printf("[CLIENT] Akcja zaakceptowana.\n");
-            can_choose_action = true;
+            state = ACTION_ACCEPTED;
         } else if (strcmp(status, "wait") == 0) {
             printf("[CLIENT] Czekaj na drugiego gracza.\n");
-            can_choose_action = false;
+            state = WAITING_FOR_OPPONENT;
         } else if (strcmp(status, "mismatch") == 0) {
             printf("[CLIENT] Akcje nie pasują (mismatch).\n");
-            can_choose_action = true;
+            state = ACTION_MISMATCH;
         } else {
             printf("[CLIENT] Nieznany status: %s\n", status);
         }
@@ -227,7 +237,7 @@ int main(int argc, char *argv[]) {
                 
                 // Jeśli game_id jest pusty, ignoruj kliknięcia guzików
                 pthread_mutex_lock(&session_mutex);
-                bool can_click = (session_id != -1) && (game_id[0] != '\0') && can_choose_action;
+                bool can_click = (session_id != -1) && (game_id[0] != '\0') && (state == READY_TO_CHOOSE || state == ACTION_MISMATCH || state == ACTION_ACCEPTED);
                 pthread_mutex_unlock(&session_mutex);
                 
                 if (!can_click) {
@@ -253,8 +263,7 @@ int main(int argc, char *argv[]) {
                             snprintf(msg.payload, sizeof(msg.payload), "%s", button_labels[clicked]);
                 
                             send_message(&msg);
-                
-                            can_choose_action = false;  // blokuj dalsze wybory do czasu odpowiedzi
+                            state = WAITING_FOR_OPPONENT;
                             printf("[CLIENT] Wysłano akcję: %s, czekaj na odpowiedź serwera.\n", button_labels[clicked]);
                         }
                     }
