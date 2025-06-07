@@ -125,7 +125,7 @@ void handle_server_message(const char *json_str) {
             break;
     }
 
-     if (cJSON_IsString(status_json)) {
+    if (cJSON_IsString(status_json)) {
         const char *status = status_json->valuestring;
         pthread_mutex_lock(&session_mutex);
         if (strcmp(status, "accepted") == 0) {
@@ -239,36 +239,30 @@ int main(int argc, char *argv[]) {
             if (event.type == SDL_QUIT) {
                 running = false;
             } else if (event.type == SDL_MOUSEBUTTONDOWN) {
-                int clicked = check_button_click(event.button.x, event.button.y);
-                printf("Kliknięto na pozycji x=%d, y=%d\n", event.button.x, event.button.y);
+                    int clicked = check_button_click(event.button.x, event.button.y);
+                    printf("Kliknięto na pozycji x=%d, y=%d\n", event.button.x, event.button.y);
                 
-                // Jeśli game_id jest pusty, ignoruj kliknięcia guzików
-                pthread_mutex_lock(&session_mutex);
-                bool can_click = (session_id != -1) && (game_id[0] != '\0') && (state == READY_TO_CHOOSE || state == ACTION_MISMATCH || state == ACTION_ACCEPTED);
-                pthread_mutex_unlock(&session_mutex);
-                
-                if (!can_click) {
-                    printf("[CLIENT] Nie możesz kliknąć guzików - brak sesji lub czekaj na drugiego gracza.\n");
-                    continue;
-                }
-
-                if (clicked != -1) {
                     pthread_mutex_lock(&session_mutex);
-                    bool can_click = (session_id != -1) && (game_id[0] != '\0') && (state == READY_TO_CHOOSE || state == ACTION_MISMATCH || state == ACTION_ACCEPTED);
+                    bool can_click = (session_id != -1) && (game_id[0] != '\0') && (state == READY_TO_CHOOSE);
                     pthread_mutex_unlock(&session_mutex);
                 
                     if (!can_click) {
-                        printf("[CLIENT] Nie możesz wybrać akcji teraz, czekaj na drugiego gracza.\n");
-                    } else {
+                        printf("[CLIENT] Nie możesz kliknąć guzików - brak sesji lub czekaj na drugiego gracza.\n");
+                        continue;
+                    }
+                
+                    if (clicked != -1) {
                         last_clicked_button = clicked;
                         last_click_time = SDL_GetTicks();
                 
                         Message msg = {0};
                         msg.type = MSG_ACTION;
+                
                         pthread_mutex_lock(&session_mutex);
                         msg.session_id = session_id;
                         msg.player_id = player_id;
                         pthread_mutex_unlock(&session_mutex);
+                
                         msg.action_code = clicked;
                         snprintf(msg.payload, sizeof(msg.payload), "%s", button_labels[clicked]);
                 
