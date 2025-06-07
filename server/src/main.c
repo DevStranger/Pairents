@@ -98,7 +98,7 @@ void *client_listener(void *arg) {
                 if (strcmp(s->action1, s->action2) == 0) {
                     char response[128];
                    snprintf(response, sizeof(response),
-                         "{\"type\":%d,\"status\":\"accepted\",\"action\":\"%s\"}", MSG_ACTION_RESULT, s->action1);
+                         "{\"type\":%d,\"status\":\"accepted\",\"action\":\"%s\"}", MSG_RESULT, s->action1);
                     send_msg(s->sock1, response);
                     send_msg(s->sock2, response);
                     printf("[SYNC] Action '%s' accepted for session %s\n", s->action1, s->game_id);
