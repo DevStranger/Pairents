@@ -70,17 +70,17 @@ void *client_listener(void *arg) {
 
         pthread_mutex_lock(&queue_mutex);
 
-        for (int i = 0; i < session_count; i++) {
+       for (int i = 0; i < session_count; i++) {
             GameSession *s = &sessions[i];
             if (strcmp(s->game_id, gid) != 0) continue;
-
-            // Ignoruj wielokrotne kliknięcia
+        
+            // Tu ignorujesz wielokrotne kliknięcia (możesz zostawić)
             if ((sockfd == s->sock1 && s->action1_ready) ||
                 (sockfd == s->sock2 && s->action2_ready)) {
                 send_msg(sockfd, "{\"status\":\"wait\"}");
                 break;
             }
-
+        
             // Zapisz akcję
             if (sockfd == s->sock1) {
                 strncpy(s->action1, action, sizeof(s->action1));
@@ -91,8 +91,8 @@ void *client_listener(void *arg) {
                 s->action2_ready = true;
                 printf("[RECV] Player2 (%d) chose: %s\n", sockfd, s->action2);
             }
-
-            // Sprawdź, czy obaj wybrali już akcję
+        
+            // **Tu wstaw ten fragment — czyli sprawdzenie, czy obaj gracze wybrali i wysłanie statusu**
             if (s->action1_ready && s->action2_ready) {
                 if (strcmp(s->action1, s->action2) == 0) {
                     char response[128];
@@ -107,19 +107,19 @@ void *client_listener(void *arg) {
                     printf("[SYNC] Mismatch: %s vs %s in session %s\n",
                            s->action1, s->action2, s->game_id);
                 }
-
+        
                 // Reset tury
                 s->action1_ready = false;
                 s->action2_ready = false;
                 s->action1[0] = '\0';
                 s->action2[0] = '\0';
-                s->resolved = false;
+        
             } else {
-                // Tylko jeden gracz wykonał akcję — drugi jeszcze nie
+                // Tylko jeden gracz wybrał — drugi jeszcze nie
                 send_msg(sockfd, "{\"status\":\"wait\"}");
             }
-
-            break; // znaleziono sesję
+        
+            break; // znaleziono sesję - wyjdź z pętli
         }
 
         pthread_mutex_unlock(&queue_mutex);
