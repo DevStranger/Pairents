@@ -6,9 +6,13 @@
 #include <stdbool.h>
 
 int send_msg(int sockfd, const char *msg) {
-    printf("[SEND] -> %d: %s\n", sockfd, msg);  
-    int len = strlen(msg);
-    if (send(sockfd, msg, len, 0) != len) {
+    printf("[SEND] -> %d: %s\n", sockfd, msg);
+
+    char buffer[1024];
+    snprintf(buffer, sizeof(buffer), "%s\n", msg); 
+
+    int len = strlen(buffer);
+    if (send(sockfd, buffer, len, 0) != len) {
         perror("send");
         return -1;
     }
