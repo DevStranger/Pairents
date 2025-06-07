@@ -30,10 +30,9 @@ bool running = true;
 char game_id[64] = {0};
 pthread_mutex_t session_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// Obsługa guzików i akcji
+// Obsługa guzików
 int last_clicked_button = -1;
 Uint32 last_click_time = 0;
-bool can_choose_action = false;
 
 // Obsługa stanu klienta
 typedef enum {
