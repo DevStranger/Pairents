@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/socket.h>
 #include <stdbool.h>
 
 int send_msg(int sockfd, const char *msg) {
