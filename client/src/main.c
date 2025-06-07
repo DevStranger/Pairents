@@ -443,15 +443,13 @@ void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font
         int x = buttons[i].x + 10;
         int y = buttons[i].y + 10;
 
+        // Rysowanie symbolu emoji
         draw_text(renderer, font_emoji, button_symbols[i], x, y, color);
 
-        int w_symbol = 0, h_symbol = 0;
-        TTF_SizeText(font_emoji, button_symbols[i], &w_symbol, &h_symbol);
-
-        draw_text(renderer, font_regular, button_labels[i], x + w_symbol + 5, y, color);
-    }  
-
-}  
+        // Rysowanie etykiety tekstowej obok emoji
+        draw_text(renderer, font_regular, button_labels[i], x + 30, y, color);
+    }
+}
 
 int check_button_click(int x, int y) {
     for (int i = 0; i < BUTTON_COUNT; i++) {
