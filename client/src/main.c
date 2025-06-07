@@ -28,6 +28,7 @@ int session_id = -1;
 int player_id = 0;  
 bool running = true;
 char game_id[64] = {0};
+pthread_mutex_t session_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Obsługa guzików
 int last_clicked_button = -1;
@@ -75,13 +76,14 @@ void handle_server_message(const char *json_str) {
 
     switch (msg_type) {
         case MSG_PAIR:
-            if (cJSON_IsNumber(session_json)) {
+            if (cJSON_IsNumber(session_json) && cJSON_IsString(payload_json)) {
+                pthread_mutex_lock(&session_mutex);
                 session_id = session_json->valueint;
-                printf("[CLIENT] Połączono w sesję ID=%d\n", session_id);
-            }
-            if (cJSON_IsString(payload_json)) {
                 strncpy(game_id, payload_json->valuestring, sizeof(game_id) - 1);
                 game_id[sizeof(game_id) - 1] = '\0';
+                pthread_mutex_unlock(&session_mutex);
+            
+                printf("[CLIENT] Połączono w sesję ID=%d\n", session_id);
                 printf("[CLIENT] Game ID zapisany: %s\n", game_id);
             }
             break;
@@ -215,16 +217,18 @@ int main(int argc, char *argv[]) {
             } else if (event.type == SDL_MOUSEBUTTONDOWN) {
                 int clicked = check_button_click(event.button.x, event.button.y);
                 printf("Kliknięto na pozycji x=%d, y=%d\n", event.button.x, event.button.y);
-            
+
+                pthread_mutex_t session_mutex = PTHREAD_MUTEX_INITIALIZER;
+                
                 // Jeśli game_id jest pusty, ignoruj kliknięcia guzików
                 if (game_id[0] == '\0') {
                     printf("[CLIENT] Nie można kliknąć guzików - brak game_id\n");
-                    continue;  // pomiń dalszą obsługę kliknięcia
+                    continue;
                 }
-            
+                
                 if (clicked != -1) {
                     printf("Kliknięto guzik: %s\n", button_labels[clicked]);
-                
+                    
                     last_clicked_button = clicked;
                     last_click_time = SDL_GetTicks();
                 
@@ -235,7 +239,7 @@ int main(int argc, char *argv[]) {
                         msg.player_id = player_id;
                         msg.action_code = clicked;
                         snprintf(msg.payload, sizeof(msg.payload), "%s", button_labels[clicked]);
-                        
+                
                         if (strlen(msg.payload) > 0) {
                             send_message(&msg);
                         } else {
