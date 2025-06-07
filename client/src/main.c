@@ -434,27 +434,26 @@ void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font
         buttons[i].h = 40;
 
         if (i == last_clicked_button && now - last_click_time < 300) {
-            SDL_SetRenderDrawColor(renderer, 70, 70, 120, 255);
+            SDL_SetRenderDrawColor(renderer, 70, 70, 120, 255);  // kolor aktywnego kliknięcia
         } else {
-            SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+            SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255);   // domyślny kolor guzika
         }
         SDL_RenderFillRect(renderer, &buttons[i]);
 
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_RenderDrawRect(renderer, &buttons[i]);
+        // Rysuj symbol emoji na guziku (wyśrodkowany)
+        int text_width, text_height;
+        TTF_SizeUTF8(font_emoji, button_symbols[i], &text_width, &text_height);
+        int emoji_x = buttons[i].x + (buttons[i].w - text_width) / 2;
+        int emoji_y = buttons[i].y + 4;
+        draw_text(renderer, font_emoji, button_symbols[i], emoji_x, emoji_y, color);
 
-        int x = buttons[i].x + 10;
-        int y = buttons[i].y + 10;
-
-        draw_text(renderer, font_emoji, button_symbols[i], x, y, color);
-
-        int w_symbol = 0, h_symbol = 0;
-        TTF_SizeText(font_emoji, button_symbols[i], &w_symbol, &h_symbol);
-
-        draw_text(renderer, font_regular, button_labels[i], x + w_symbol + 5, y, color);
-    }  
-
-}  
+        // Rysuj etykietę pod emoji (wyśrodkowaną)
+        TTF_SizeUTF8(font_regular, button_labels[i], &text_width, &text_height);
+        int label_x = buttons[i].x + (buttons[i].w - text_width) / 2;
+        int label_y = buttons[i].y + 24;
+        draw_text(renderer, font_regular, button_labels[i], label_x, label_y, color);
+    }
+}
 
 int check_button_click(int x, int y) {
     for (int i = 0; i < BUTTON_COUNT; i++) {
