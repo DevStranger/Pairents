@@ -45,8 +45,6 @@ void *client_listener(void *arg) {
 
     while (1) {
         int len = recv_msg(sockfd, buffer, sizeof(buffer));
-        printf("[INFO] Received from sock=%d: %s\n", sockfd, buffer); //do usunięcia potem lol
-        printf("[DEBUG] recv_msg returned %d, buffer: '%s'\n", len, buffer); //do usuniecia
         if (len <= 0) {
             printf("[DISCONNECT] Client disconnected (sock=%d)\n", sockfd);
             close(sockfd);
@@ -114,7 +112,6 @@ void *client_listener(void *arg) {
                 // Reset tury
                 s->action1_ready = false;
                 s->action2_ready = false;
-                printf("[RECV] Player%d (%d) chose: %s\n", sockfd == s->sock1 ? 1 : 2, sockfd, action); // do usuniecia
                 s->action1[0] = '\0';
                 s->action2[0] = '\0';
         
@@ -184,8 +181,6 @@ void *handle_client(void *arg) {
         *c2 = client2;
 
         pthread_t tid1, tid2;
-        printf("[DEBUG] Starting client_listener for sock=%d\n", client1); // do usuniecia
-        printf("[DEBUG] Starting client_listener for sock=%d\n", client2); // do usuniecia
         pthread_create(&tid1, NULL, client_listener, c1);
         pthread_create(&tid2, NULL, client_listener, c2);
         pthread_detach(tid1);
