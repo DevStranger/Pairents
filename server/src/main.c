@@ -179,6 +179,7 @@ void *handle_client(void *arg) {
         printf("[PAIR] Created session %s with clients %d and %d\n",
                s->game_id, client1, client2);
 
+        session_count++;
         int *c1 = malloc(sizeof(int));
         int *c2 = malloc(sizeof(int));
         *c1 = client1;
