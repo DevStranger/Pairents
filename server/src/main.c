@@ -260,6 +260,7 @@ int main() {
         client_fd = accept(server_fd, (struct sockaddr *)&addr, &addrlen);
         if (client_fd < 0) {
             perror("accept");
+            printf("[MAIN] Accepted client socket %d\n", client_fd);
             continue;
         }
 
