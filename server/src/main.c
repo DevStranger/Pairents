@@ -130,7 +130,10 @@ void *client_listener(void *arg) {
         
             } else {
                 // Tylko jeden gracz wybrał — drugi jeszcze nie
-                send_msg(sockfd, "{\"type\":3,\"status\":\"wait\"}");
+                snprintf(wait_msg, sizeof(wait_msg),
+                         "{\"type\":%d,\"session_id\":%d,\"status\":\"wait\",\"payload\":\"\"}",
+                         MSG_RESULT, i);  
+                send_msg(sockfd, wait_msg);
             }
         
             break; // znaleziono sesję - wyjdź z pętli
