@@ -71,7 +71,8 @@ void *client_listener(void *arg) {
         const char *action = action_json->valuestring;
 
         pthread_mutex_lock(&queue_mutex);
-
+        printf("[DEBUG] session_count in listener: %d\n", session_count); // do usuniecia
+        
        for (int i = 0; i < session_count; i++) {
             GameSession *s = &sessions[i];
             printf("[DEBUG] Comparing actions: '%s' vs '%s'\n", s->action1, s->action2); // do usuniecia
@@ -194,12 +195,20 @@ void *handle_client(void *arg) {
                s->game_id, client1, client2);
 
         session_count++;
+        printf("[DEBUG] session_count now: %d\n", session_count); // do usuniecia
         int *c1 = malloc(sizeof(int));
         int *c2 = malloc(sizeof(int));
         *c1 = client1;
         *c2 = client2;
 
+        printf("[DEBUG] Session %d created: game_id=%s, sock1=%d, sock2=%d\n",
+       session_count - 1, s->game_id, s->sock1, s->sock2); // do usuniecia
+        
         pthread_t tid1, tid2;
+
+        printf("[DEBUG] Session %d created: game_id=%s, sock1=%d, sock2=%d\n",
+       session_count - 1, s->game_id, s->sock1, s->sock2); // do usuniecia
+        
         pthread_create(&tid1, NULL, client_listener, c1);
         pthread_create(&tid2, NULL, client_listener, c2);
         pthread_detach(tid1);
