@@ -151,7 +151,6 @@ void handle_server_message(const char *json_str) {
             break;
         }
 
-
         default:
             printf("[CLIENT] Nieznany typ wiadomości: %d\n", msg_type);
             break;
@@ -270,7 +269,8 @@ int main(int argc, char *argv[]) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = false;
-            } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+            }
+            if (event.type == SDL_MOUSEBUTTONDOWN) {
                     int clicked = check_button_click(event.button.x, event.button.y);
                 
                     pthread_mutex_lock(&session_mutex);
@@ -303,8 +303,9 @@ int main(int argc, char *argv[]) {
                 
                         printf("[CLIENT] Wysłano akcję: %s, czekaj na odpowiedź serwera.\n", button_labels[clicked]);
                     }
-                }
             }
+        }
+    }
         
         Uint32 now = SDL_GetTicks();
         if (now - last_update > 1000) {
