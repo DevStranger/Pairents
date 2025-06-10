@@ -450,23 +450,35 @@ void draw_ascii_art(SDL_Renderer *r, TTF_Font *font, const char *ascii_art, int 
 }
 
 void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font_emoji, SDL_Color color) {
-    bool active = can_click_buttons();
+    Uint32 now = SDL_GetTicks();
 
     for (int i = 0; i < BUTTON_COUNT; i++) {
-        SDL_Rect rect = buttons[i];
-        if (!active) {
-            // Przycisk szary, nieaktywny
-            SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
-        } else {
-            SDL_SetRenderDrawColor(renderer, 0, 128, 255, 255);
-        }
-        SDL_RenderFillRect(renderer, &rect);
+        buttons[i].x = 20 + i * 160;
+        buttons[i].y = 420;
+        buttons[i].w = 140;
+        buttons[i].h = 40;
 
-        SDL_Color text_color = active ? color : (SDL_Color){150, 150, 150, 255};
-        draw_text(renderer, font_emoji, button_symbols[i], rect.x + 10, rect.y + 5, text_color);
-        draw_text(renderer, font_regular, button_labels[i], rect.x + 40, rect.y + 10, text_color);
-    }
-}
+        if (i == last_clicked_button && now - last_click_time < 300) {
+            SDL_SetRenderDrawColor(renderer, 70, 70, 120, 255);
+        } else {
+            SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+        }
+        SDL_RenderFillRect(renderer, &buttons[i]);
+
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderDrawRect(renderer, &buttons[i]);
+
+        int x = buttons[i].x + 10;
+        int y = buttons[i].y + 10;
+
+        draw_text(renderer, font_emoji, button_symbols[i], x, y, color);
+
+        int w_symbol = 0, h_symbol = 0;
+        TTF_SizeText(font_emoji, button_symbols[i], &w_symbol, &h_symbol);
+
+        draw_text(renderer, font_regular, button_labels[i], x + w_symbol + 5, y, color);
+    }  
+}  
 
 int check_button_click(int x, int y) {
     for (int i = 0; i < BUTTON_COUNT; i++) {
