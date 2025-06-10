@@ -130,9 +130,10 @@ void *client_listener(void *arg) {
         
             } else {
                 // Tylko jeden gracz wybrał — drugi jeszcze nie
+                char wait_msg[128];
                 snprintf(wait_msg, sizeof(wait_msg),
                          "{\"type\":%d,\"session_id\":%d,\"status\":\"wait\",\"payload\":\"\"}",
-                         MSG_RESULT, i);  
+                         MSG_RESULT, i);  // i = index sesji
                 send_msg(sockfd, wait_msg);
             }
         
