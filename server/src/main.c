@@ -75,6 +75,7 @@ void *client_listener(void *arg) {
        for (int i = 0; i < session_count; i++) {
             GameSession *s = &sessions[i];
             printf("[DEBUG] Comparing actions: '%s' vs '%s'\n", s->action1, s->action2); // do usuniecia
+            printf("[DEBUG] Comparing session id: s->game_id='%s', client gid='%s'\n", s->game_id, gid); // do usuniecia
             if (strcmp(s->game_id, gid) != 0) continue;
         
             // ignorujemy wielokrotnie kliknięcia
