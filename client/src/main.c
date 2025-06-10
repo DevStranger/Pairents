@@ -114,11 +114,32 @@ void handle_server_message(const char *json_str) {
             }
             break;
 
-        case MSG_RESULT:
-            if (cJSON_IsString(payload_json)) {
-                printf("[CLIENT] Wynik: %s\n", payload_json->valuestring);
+        case MSG_RESULT: {
+            const cJSON *status_json = cJSON_GetObjectItemCaseSensitive(json, "status");
+            const cJSON *payload_json = cJSON_GetObjectItemCaseSensitive(json, "payload");
+        
+            if (cJSON_IsString(status_json)) {
+                const char *status = status_json->valuestring;
+        
+                if (strcmp(status, "accepted") == 0 && cJSON_IsString(payload_json)) {
+                    printf("[CLIENT] Obaj gracze wybrali: %s\n", payload_json->valuestring);
+                    // odblokuj przyciski, przejdź do kolejnej tury itd.
+                }
+                else if (strcmp(status, "mismatch") == 0) {
+                    printf("[CLIENT] Nie dopasowano akcji! Wybierz ponownie.\n");
+                    // odblokuj przyciski
+                }
+                else if (strcmp(status, "wait") == 0) {
+                    printf("[CLIENT] Oczekiwanie na drugiego gracza...\n");
+                    // nie rób nic – tylko czekaj
+                }
+                else {
+                    printf("[CLIENT] Nieznany status: %s\n", status);
+                }
             }
             break;
+        }
+
 
         default:
             printf("[CLIENT] Nieznany typ wiadomości: %d\n", msg_type);
