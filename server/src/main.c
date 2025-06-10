@@ -81,7 +81,7 @@ void *client_listener(void *arg) {
             if ((sockfd == s->sock1 && s->action1_ready) ||
                 (sockfd == s->sock2 && s->action2_ready)) {
                 printf("[CHECK] Both players ready in session %s (%d, %d)\n", s->game_id, s->sock1, s->sock2); // do usuniecia
-                send_msg(sockfd, "{\"status\":\"wait\"}");
+                send_msg(sockfd, "{\"type\":3,\"status\":\"wait\"}");
                 break;
             }
             
