@@ -150,6 +150,9 @@ void *client_listener(void *arg) {
 }
 
 void *handle_client(void *arg) {
+
+    printf("[DEBUG] handle_client called, queue_len=%d\n", queue_len); // do usuniecia
+
     int sockfd = *(int *)arg;
     free(arg);
 
@@ -162,6 +165,9 @@ void *handle_client(void *arg) {
     if (queue_len >= 2) {
         int client1 = client_queue[0];
         int client2 = client_queue[1];
+
+        printf("[DEBUG] Added client sock %d to queue, new queue_len=%d\n", sockfd, queue_len); // do usuniecia
+        
         memmove(client_queue, client_queue + 2, sizeof(int) * (queue_len - 2));
         queue_len -= 2;
 
@@ -208,9 +214,12 @@ void *handle_client(void *arg) {
 
         printf("[DEBUG] Session %d created: game_id=%s, sock1=%d, sock2=%d\n",
        session_count - 1, s->game_id, s->sock1, s->sock2); // do usuniecia
+
+        printf("[DEBUG] Creating client_listener threads for clients %d and %d\n", client1, client2); // do usuniecia
         
         pthread_create(&tid1, NULL, client_listener, c1);
         pthread_create(&tid2, NULL, client_listener, c2);
+        
         pthread_detach(tid1);
         pthread_detach(tid2);
 
