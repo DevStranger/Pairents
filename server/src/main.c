@@ -191,7 +191,6 @@ void *handle_client(void *arg) {
         pthread_detach(tid1);
         pthread_detach(tid2);
 
-        session_count++;
     }
 
     pthread_mutex_unlock(&queue_mutex);
