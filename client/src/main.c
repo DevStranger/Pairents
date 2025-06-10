@@ -305,7 +305,6 @@ int main(int argc, char *argv[]) {
                     }
                 }
             }
-        }
         
         Uint32 now = SDL_GetTicks();
         if (now - last_update > 1000) {
@@ -370,6 +369,7 @@ int main(int argc, char *argv[]) {
         SDL_Delay(16);  // ok. 60 FPS
     }
 
+    running = false;
     pthread_join(recv_tid, NULL);
 
     free(bunny_art);
@@ -382,8 +382,6 @@ int main(int argc, char *argv[]) {
     SDL_DestroyWindow(window);
     TTF_Quit();
     SDL_Quit();
-
-    running = false;
 
     return 0;
 }
