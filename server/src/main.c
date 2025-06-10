@@ -81,7 +81,11 @@ void *client_listener(void *arg) {
             if ((sockfd == s->sock1 && s->action1_ready) ||
                 (sockfd == s->sock2 && s->action2_ready)) {
                 printf("[CHECK] Both players ready in session %s (%d, %d)\n", s->game_id, s->sock1, s->sock2); // do usuniecia
-                send_msg(sockfd, "{\"type\":3,\"status\":\"wait\"}");
+                char wait_msg[128];
+                snprintf(wait_msg, sizeof(wait_msg),
+                         "{\"type\":%d,\"session_id\":%d,\"status\":\"wait\",\"payload\":\"\"}",
+                         MSG_RESULT, i);  
+                send_msg(sockfd, wait_msg);
                 break;
             }
             
@@ -101,14 +105,19 @@ void *client_listener(void *arg) {
             if (s->action1_ready && s->action2_ready) {
                 if (strcmp(s->action1, s->action2) == 0) {
                     char response[128];
-                   snprintf(response, sizeof(response),
-                         "{\"type\":%d,\"status\":\"accepted\",\"action\":\"%s\"}", MSG_RESULT, s->action1);
+                    snprintf(response, sizeof(response),
+                             "{\"type\":%d,\"session_id\":%d,\"status\":\"accepted\",\"payload\":\"%s\"}",
+                             MSG_RESULT, i, s->action1);
                     send_msg(s->sock1, response);
                     send_msg(s->sock2, response);
                     printf("[SYNC] Action '%s' accepted for session %s\n", s->action1, s->game_id);
                 } else {
-                    send_msg(s->sock1, "{\"type\":3,\"status\":\"mismatch\"}");
-                    send_msg(s->sock2, "{\"type\":3,\"status\":\"mismatch\"}");
+                char mismatch_msg[128];
+                snprintf(mismatch_msg, sizeof(mismatch_msg),
+                         "{\"type\":%d,\"session_id\":%d,\"status\":\"mismatch\",\"payload\":\"\"}",
+                         MSG_RESULT, i);
+                send_msg(s->sock1, mismatch_msg);
+                send_msg(s->sock2, mismatch_msg);
                     printf("[SYNC] Mismatch: %s vs %s in session %s\n",
                            s->action1, s->action2, s->game_id);
                 }
