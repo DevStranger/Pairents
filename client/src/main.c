@@ -56,6 +56,14 @@ char* load_ascii_art_from_file(const char *filepath);
 void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font_emoji, SDL_Color color);
 int check_button_click(int x, int y);
 
+// możliwość klikania guzików
+bool can_click_buttons() {
+    pthread_mutex_lock(&session_mutex);
+    bool res = (state == READY_TO_CHOOSE || state == ACTION_MISMATCH);
+    pthread_mutex_unlock(&session_mutex);
+    return res;
+}
+
 // --- Sieć: wysyłanie i odbieranie ---
 void send_message(Message *msg) {
     char json_str[MAX_MSG_LEN];
@@ -122,14 +130,17 @@ void handle_server_message(const char *json_str) {
                 const char *status = status_json->valuestring;
         
                 if (strcmp(status, "accepted") == 0 && cJSON_IsString(payload_json)) {
+                    state = ACTION_ACCEPTED;
                     printf("[CLIENT] Obaj gracze wybrali: %s\n", payload_json->valuestring);
                     // odblokuj przyciski, przejdź do kolejnej tury itd.
                 }
                 else if (strcmp(status, "mismatch") == 0) {
+                    state = READY_TO_CHOOSE;
                     printf("[CLIENT] Nie dopasowano akcji! Wybierz ponownie.\n");
                     // odblokuj przyciski
                 }
                 else if (strcmp(status, "wait") == 0) {
+                    state = WAITING_FOR_OPPONENT;
                     printf("[CLIENT] Oczekiwanie na drugiego gracza...\n");
                     // nie rób nic – tylko czekaj
                 }
@@ -260,27 +271,18 @@ int main(int argc, char *argv[]) {
             if (event.type == SDL_QUIT) {
                 running = false;
             } else if (event.type == SDL_MOUSEBUTTONDOWN) {
-                int clicked = check_button_click(event.button.x, event.button.y);
-                printf("Kliknięto na pozycji x=%d, y=%d\n", event.button.x, event.button.y);
+                    int clicked = check_button_click(event.button.x, event.button.y);
                 
-                // Jeśli game_id jest pusty, ignoruj kliknięcia guzików
-                pthread_mutex_lock(&session_mutex);
-                bool can_click = (session_id != -1) && (game_id[0] != '\0') && (state == READY_TO_CHOOSE || state == ACTION_MISMATCH || state == ACTION_ACCEPTED);
-                pthread_mutex_unlock(&session_mutex);
-                
-                if (!can_click) {
-                    printf("[CLIENT] Nie możesz kliknąć guzików - brak sesji lub czekaj na drugiego gracza.\n");
-                    continue;
-                }
-
-                if (clicked != -1) {
                     pthread_mutex_lock(&session_mutex);
-                    bool can_click = (session_id != -1) && (game_id[0] != '\0') && (state == READY_TO_CHOOSE || state == ACTION_MISMATCH || state == ACTION_ACCEPTED);
+                    bool can_click = can_click_buttons() && (session_id != -1) && (game_id[0] != '\0');
                     pthread_mutex_unlock(&session_mutex);
                 
                     if (!can_click) {
-                        printf("[CLIENT] Nie możesz wybrać akcji teraz, czekaj na drugiego gracza.\n");
-                    } else {
+                        printf("[CLIENT] Nie możesz kliknąć guzików - brak sesji lub czekaj na drugiego gracza.\n");
+                        continue;
+                    }
+                
+                    if (clicked != -1) {
                         last_clicked_button = clicked;
                         last_click_time = SDL_GetTicks();
                 
@@ -448,36 +450,23 @@ void draw_ascii_art(SDL_Renderer *r, TTF_Font *font, const char *ascii_art, int 
 }
 
 void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font_emoji, SDL_Color color) {
-    Uint32 now = SDL_GetTicks();
+    bool active = can_click_buttons();
 
     for (int i = 0; i < BUTTON_COUNT; i++) {
-        buttons[i].x = 20 + i * 160;
-        buttons[i].y = 420;
-        buttons[i].w = 140;
-        buttons[i].h = 40;
-
-        if (i == last_clicked_button && now - last_click_time < 300) {
-            SDL_SetRenderDrawColor(renderer, 70, 70, 120, 255);
+        SDL_Rect rect = buttons[i];
+        if (!active) {
+            // Przycisk szary, nieaktywny
+            SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
         } else {
-            SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+            SDL_SetRenderDrawColor(renderer, 0, 128, 255, 255);
         }
-        SDL_RenderFillRect(renderer, &buttons[i]);
+        SDL_RenderFillRect(renderer, &rect);
 
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_RenderDrawRect(renderer, &buttons[i]);
-
-        int x = buttons[i].x + 10;
-        int y = buttons[i].y + 10;
-
-        draw_text(renderer, font_emoji, button_symbols[i], x, y, color);
-
-        int w_symbol = 0, h_symbol = 0;
-        TTF_SizeText(font_emoji, button_symbols[i], &w_symbol, &h_symbol);
-
-        draw_text(renderer, font_regular, button_labels[i], x + w_symbol + 5, y, color);
-    }  
-
-}  
+        SDL_Color text_color = active ? color : (SDL_Color){150, 150, 150, 255};
+        draw_text(renderer, font_emoji, button_symbols[i], rect.x + 10, rect.y + 5, text_color);
+        draw_text(renderer, font_regular, button_labels[i], rect.x + 40, rect.y + 10, text_color);
+    }
+}
 
 int check_button_click(int x, int y) {
     for (int i = 0; i < BUTTON_COUNT; i++) {
