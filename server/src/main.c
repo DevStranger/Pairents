@@ -71,75 +71,76 @@ void *client_listener(void *arg) {
         const char *action = action_json->valuestring;
 
         pthread_mutex_lock(&queue_mutex);
-        printf("[DEBUG] session_count in listener: %d\n", session_count); // do usuniecia
-        
-       for (int i = 0; i < session_count; i++) {
+
+        for (int i = 0; i < session_count; i++) {
             GameSession *s = &sessions[i];
-            printf("[DEBUG] Comparing actions: '%s' vs '%s'\n", s->action1, s->action2); // do usuniecia
-            printf("[DEBUG] Comparing session id: s->game_id='%s', client gid='%s'\n", s->game_id, gid); // do usuniecia
             if (strcmp(s->game_id, gid) != 0) continue;
         
-            // ignorujemy wielokrotnie kliknięcia
+            // ignoruj wielokrotne kliknięcia
             if ((sockfd == s->sock1 && s->action1_ready) ||
                 (sockfd == s->sock2 && s->action2_ready)) {
-                printf("[CHECK] Both players ready in session %s (%d, %d)\n", s->game_id, s->sock1, s->sock2); // do usuniecia
                 char wait_msg[128];
                 snprintf(wait_msg, sizeof(wait_msg),
                          "{\"type\":%d,\"session_id\":%d,\"status\":\"wait\",\"payload\":\"\"}",
-                         MSG_RESULT, i);  
+                         MSG_RESULT, i);
+        
+                pthread_mutex_unlock(&queue_mutex);
+        
                 send_msg(sockfd, wait_msg);
                 break;
             }
-            
+        
             // zapisujemy wybraną akcję
             if (sockfd == s->sock1) {
                 strncpy(s->action1, action, sizeof(s->action1) - 1);
                 s->action1[sizeof(s->action1) - 1] = '\0';
                 s->action1_ready = true;
-                printf("[RECV] Player1 (%d) chose: %s\n", sockfd, s->action1);
             } else if (sockfd == s->sock2) {
                 strncpy(s->action2, action, sizeof(s->action2) - 1);
                 s->action2[sizeof(s->action2) - 1] = '\0';
                 s->action2_ready = true;
-                printf("[RECV] Player2 (%d) chose: %s\n", sockfd, s->action2);
             }
         
-            if (s->action1_ready && s->action2_ready) {
+            // przygotuj zmienne do wysłania po unlocku
+            bool both_ready = s->action1_ready && s->action2_ready;
+            bool accepted = false;
+            char response_msg[256] = {0};
+            int send_sock1 = s->sock1;
+            int send_sock2 = s->sock2;
+        
+            if (both_ready) {
                 if (strcmp(s->action1, s->action2) == 0) {
-                    char response[128];
-                    snprintf(response, sizeof(response),
+                    accepted = true;
+                    snprintf(response_msg, sizeof(response_msg),
                              "{\"type\":%d,\"session_id\":%d,\"status\":\"accepted\",\"payload\":\"%s\"}",
                              MSG_RESULT, i, s->action1);
-                    send_msg(s->sock1, response);
-                    send_msg(s->sock2, response);
-                    printf("[SYNC] Action '%s' accepted for session %s\n", s->action1, s->game_id);
                 } else {
-                char mismatch_msg[128];
-                snprintf(mismatch_msg, sizeof(mismatch_msg),
-                         "{\"type\":%d,\"session_id\":%d,\"status\":\"mismatch\",\"payload\":\"\"}",
-                         MSG_RESULT, i);
-                send_msg(s->sock1, mismatch_msg);
-                send_msg(s->sock2, mismatch_msg);
-                    printf("[SYNC] Mismatch: %s vs %s in session %s\n",
-                           s->action1, s->action2, s->game_id);
+                    snprintf(response_msg, sizeof(response_msg),
+                             "{\"type\":%d,\"session_id\":%d,\"status\":\"mismatch\",\"payload\":\"\"}",
+                             MSG_RESULT, i);
                 }
         
-                // Reset tury
+                // reset akcji
                 s->action1_ready = false;
                 s->action2_ready = false;
                 s->action1[0] = '\0';
                 s->action2[0] = '\0';
-        
             } else {
-                // Tylko jeden gracz wybrał — drugi jeszcze nie
-                char wait_msg[128];
-                snprintf(wait_msg, sizeof(wait_msg),
+                snprintf(response_msg, sizeof(response_msg),
                          "{\"type\":%d,\"session_id\":%d,\"status\":\"wait\",\"payload\":\"\"}",
-                         MSG_RESULT, i);  // i = index sesji
-                send_msg(sockfd, wait_msg);
+                         MSG_RESULT, i);
+                send_sock1 = sockfd;  // wysyłaj tylko do aktualnego klienta
+                send_sock2 = -1;      // nie wysyłaj do drugiego
             }
         
-            break; // znaleziono sesję - wyjdź z pętli
+            pthread_mutex_unlock(&queue_mutex);
+        
+            // wysyłanie po unlocku mutexa
+            send_msg(send_sock1, response_msg);
+            if (send_sock2 != -1) {
+                send_msg(send_sock2, response_msg);
+            }
+            break;
         }
 
         pthread_mutex_unlock(&queue_mutex);
