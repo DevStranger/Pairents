@@ -46,8 +46,6 @@ void *client_listener(void *arg) {
 
     while (1) {
         int len = recv_msg(sockfd, buffer, sizeof(buffer));
-        printf("[DEBUG] Received message of length %d from sock=%d\n", len, sockfd);
-        printf("[DEBUG] Parsed action1='%s', game_id='%s'\n", s->action1, game_id);
         if (len <= 0) {
             printf("[DISCONNECT] Client disconnected (sock=%d)\n", sockfd);
             close(sockfd);
@@ -81,65 +79,22 @@ void *client_listener(void *arg) {
 
             session_found = true;
 
-            if ((sockfd == s->sock1 && s->action1_ready) ||
-                (sockfd == s->sock2 && s->action2_ready)) {
-                char wait_msg[128];
-                snprintf(wait_msg, sizeof(wait_msg),
-                         "{\"type\":%d,\"session_id\":%d,\"status\":\"wait\",\"payload\":\"\"}",
-                         MSG_RESULT, i);
-
-                send_msg(sockfd, wait_msg);
-                pthread_mutex_unlock(&queue_mutex);
-                cJSON_Delete(json);
-                goto next_iteration;
-            }
-
             if (sockfd == s->sock1) {
                 strncpy(s->action1, action, sizeof(s->action1) - 1);
                 s->action1[sizeof(s->action1) - 1] = '\0';
-                s->action1_ready = true;
-                printf("[DEBUG] action1_ready=%d, action2_ready=%d\n", s->action1_ready, s->action2_ready);
-                printf("[INFO] Session %d: Action1 set to '%s'\n", i, s->action1);
+                printf("[INFO] Session %d: Received action1='%s' from sock=%d\n", i, s->action1, sockfd);
             } else if (sockfd == s->sock2) {
                 strncpy(s->action2, action, sizeof(s->action2) - 1);
                 s->action2[sizeof(s->action2) - 1] = '\0';
-                s->action2_ready = true;
-                printf("[INFO] Session %d: Action2 set to '%s'\n", i, s->action2);
+                printf("[INFO] Session %d: Received action2='%s' from sock=%d\n", i, s->action2, sockfd);
             }
 
-            if (s->action1_ready && s->action2_ready) {
-                printf("[DEBUG] Session %d: Both actions received. Comparing '%s' and '%s'\n", i, s->action1, s->action2);
-
-                const char *status;
-                if (strcmp(s->action1, s->action2) == 0) {
-                    status = "accepted";
-                    printf("[INFO] Session %d: Actions matched ('%s')\n", i, s->action1);
-                } else {
-                    status = "mismatch";
-                    printf("[INFO] Session %d: Actions mismatch ('%s' != '%s')\n", i, s->action1, s->action2);
-                }
-
-                printf("[RESULT] Session %d result: %s\n", i, status); // <--- DODANE TUTAJ
-
-                char msg[256];
-                snprintf(msg, sizeof(msg),
-                         "{\"type\":%d,\"session_id\":%d,\"status\":\"%s\",\"payload\":\"\"}",
-                         MSG_RESULT, i, status);
-
-                send_msg(s->sock1, msg);
-                send_msg(s->sock2, msg);
-
-                s->action1_ready = false;
-                s->action2_ready = false;
-                s->action1[0] = '\0';
-                s->action2[0] = '\0';
-            } else {
-                char wait_msg[128];
-                snprintf(wait_msg, sizeof(wait_msg),
-                         "{\"type\":%d,\"session_id\":%d,\"status\":\"wait\",\"payload\":\"\"}",
-                         MSG_RESULT, i);
-                send_msg(sockfd, wait_msg);
-            }
+            // Wysyłamy prostą odpowiedź potwierdzającą odbiór akcji
+            char reply[128];
+            snprintf(reply, sizeof(reply),
+                     "{\"type\": %d, \"session_id\": %d, \"status\": \"received\", \"payload\": \"\"}",
+                     MSG_RESULT, i);
+            send_msg(sockfd, reply);
 
             break;
         }
@@ -151,9 +106,6 @@ void *client_listener(void *arg) {
         }
 
         cJSON_Delete(json);
-
-    next_iteration:
-        ;
     }
 
     return NULL;
