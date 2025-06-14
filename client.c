@@ -1,41 +1,126 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 #include <arpa/inet.h>
+#include <SDL2/SDL.h>
 
 #define PORT 12345
 #define SERVER_IP "127.0.0.1"
+#define WINDOW_WIDTH 500
+#define WINDOW_HEIGHT 200
+#define BUTTON_WIDTH 90
+#define BUTTON_HEIGHT 60
 
-int main() {
+const char *button_labels[] = { "Feed", "Read", "Sleep", "Hug", "Play" };
+
+int connect_to_server() {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
         perror("socket");
-        exit(1);
+        return -1;
     }
 
     struct sockaddr_in serv_addr = {
         .sin_family = AF_INET,
         .sin_port = htons(PORT)
     };
-
     inet_pton(AF_INET, SERVER_IP, &serv_addr.sin_addr);
 
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
         perror("connect");
-        exit(1);
+        close(sock);
+        return -1;
     }
 
-    printf("Wpisz znak: ");
-    char c;
-    scanf(" %c", &c);
-    send(sock, &c, 1, 0);
+    return sock;
+}
 
-    char received;
-    if (recv(sock, &received, 1, 0) > 0) {
-        printf("Partner wysłał: %c\n", received);
+int main(int argc, char *argv[]) {
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        fprintf(stderr, "SDL Init Error: %s\n", SDL_GetError());
+        return 1;
+    }
+
+    SDL_Window *win = SDL_CreateWindow("Wybierz akcję", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                                       WINDOW_WIDTH, WINDOW_HEIGHT, 0);
+    if (!win) {
+        fprintf(stderr, "SDL CreateWindow Error: %s\n", SDL_GetError());
+        SDL_Quit();
+        return 1;
+    }
+
+    SDL_Renderer *ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
+    if (!ren) {
+        SDL_DestroyWindow(win);
+        SDL_Quit();
+        return 1;
+    }
+
+    int running = 1;
+    int button_clicked = -1;
+    SDL_Event e;
+
+    // Przyciski
+    SDL_Rect buttons[5];
+    for (int i = 0; i < 5; ++i) {
+        buttons[i].x = 20 + i * (BUTTON_WIDTH + 10);
+        buttons[i].y = 50;
+        buttons[i].w = BUTTON_WIDTH;
+        buttons[i].h = BUTTON_HEIGHT;
+    }
+
+    while (running) {
+        while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_QUIT) {
+                running = 0;
+            } else if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
+                int mx = e.button.x;
+                int my = e.button.y;
+                for (int i = 0; i < 5; ++i) {
+                    if (mx >= buttons[i].x && mx <= buttons[i].x + buttons[i].w &&
+                        my >= buttons[i].y && my <= buttons[i].y + buttons[i].h) {
+                        button_clicked = i;
+                        running = 0;
+                        break;
+                    }
+                }
+            }
+        }
+
+        SDL_SetRenderDrawColor(ren, 200, 200, 200, 255);
+        SDL_RenderClear(ren);
+
+        // Renderuj przyciski
+        for (int i = 0; i < 5; ++i) {
+            SDL_SetRenderDrawColor(ren, 100, 100, 255, 255);
+            SDL_RenderFillRect(ren, &buttons[i]);
+        }
+
+        SDL_RenderPresent(ren);
+    }
+
+    SDL_DestroyRenderer(ren);
+    SDL_DestroyWindow(win);
+    SDL_Quit();
+
+    if (button_clicked == -1) {
+        printf("Nie wybrano żadnego przycisku.\n");
+        return 0;
+    }
+
+    // Po kliknięciu - łączymy się z serwerem i wysyłamy wybór
+    int sock = connect_to_server();
+    if (sock < 0) return 1;
+
+    unsigned char choice = (unsigned char)button_clicked;
+    send(sock, &choice, 1, 0);
+
+    unsigned char response;
+    if (recv(sock, &response, 1, 0) > 0 && response < 5) {
+        printf("Partner wybrał: %s\n", button_labels[response]);
     } else {
-        printf("Błąd odbioru od serwera.\n");
+        printf("Błąd odbioru od serwera lub nieprawidłowy wybór partnera.\n");
     }
 
     close(sock);
