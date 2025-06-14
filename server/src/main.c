@@ -47,6 +47,7 @@ void *client_listener(void *arg) {
     while (1) {
         int len = recv_msg(sockfd, buffer, sizeof(buffer));
         printf("[DEBUG] Received message of length %d from sock=%d\n", len, sockfd);
+        printf("[DEBUG] Parsed action='%s', game_id='%s'\n", action, gid);
         if (len <= 0) {
             printf("[DISCONNECT] Client disconnected (sock=%d)\n", sockfd);
             close(sockfd);
@@ -97,6 +98,7 @@ void *client_listener(void *arg) {
                 strncpy(s->action1, action, sizeof(s->action1) - 1);
                 s->action1[sizeof(s->action1) - 1] = '\0';
                 s->action1_ready = true;
+                printf("[DEBUG] action1_ready=%d, action2_ready=%d\n", s->action1_ready, s->action2_ready);
                 printf("[INFO] Session %d: Action1 set to '%s'\n", i, s->action1);
             } else if (sockfd == s->sock2) {
                 strncpy(s->action2, action, sizeof(s->action2) - 1);
