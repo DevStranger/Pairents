@@ -91,6 +91,16 @@ void *receive_thread(void *arg) {
     return NULL;
 }
 
+int check_button_click(int x, int y) {
+    // tu sprawdzasz, czy kliknięto na konkretny przycisk
+    // na przykład:
+    if (x >= button_x && x <= button_x + button_w &&
+        y >= button_y && y <= button_y + button_h) {
+        return 1; // kliknięcie na przycisk
+    }
+    return 0; // brak kliknięcia
+}
+
 int main(int argc, char *argv[]) {
     if (argc != 3) {
         return 1;
