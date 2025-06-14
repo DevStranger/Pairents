@@ -85,8 +85,6 @@ void *handle_client(void *arg) {
         if (assigned_pair->has_choice1 && assigned_pair->has_choice2) {
             if (!assigned_pair->result_ready) {
                 if (assigned_pair->choice1 == assigned_pair->choice2) {
-                    printf(assigned_pair->choice1);
-                    printf(assigned_pair->choice2);
                     assigned_pair->status_result = 2; // accepted
                 } else {
                     assigned_pair->status_result = 1; // mismatch
