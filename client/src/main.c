@@ -278,7 +278,8 @@ int main(int argc, char *argv[]) {
 
                 if (clicked != -1) {
                     pthread_mutex_lock(&session_mutex);
-                    bool can_click = (session_id != -1) && (game_id[0] != '\0') && (state == READY_TO_CHOOSE || state == ACTION_MISMATCH || state == ACTION_ACCEPTED);
+                    bool can_click = (session_id != -1) && (game_id[0] != '\0') && 
+                                     (state == READY_TO_CHOOSE || state == ACTION_MISMATCH || state == ACTION_ACCEPTED);
                     pthread_mutex_unlock(&session_mutex);
                 
                     if (!can_click) {
