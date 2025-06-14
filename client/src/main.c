@@ -114,7 +114,7 @@ void handle_server_message(const char *json_str) {
             }
             break;
 
-        case MSG_RESULT: {
+       case MSG_RESULT: {
             const cJSON *status_json = cJSON_GetObjectItemCaseSensitive(json, "status");
             const cJSON *payload_json = cJSON_GetObjectItemCaseSensitive(json, "payload");
         
@@ -122,28 +122,26 @@ void handle_server_message(const char *json_str) {
                 const char *status = status_json->valuestring;
         
                 if (strcmp(status, "accepted") == 0 && cJSON_IsString(payload_json)) {
-                    printf("[CLIENT] Obaj gracze wybrali: %s\n", payload_json->valuestring);
+                    printf("[CLIENT][RESULT] Akcja zaakceptowana: %s\n", payload_json->valuestring);
                     pthread_mutex_lock(&session_mutex);
-                    state = READY_TO_CHOOSE;  
+                    state = READY_TO_CHOOSE;
                     pthread_mutex_unlock(&session_mutex);
                 }
                 else if (strcmp(status, "mismatch") == 0) {
-                    printf("[CLIENT] Nie dopasowano akcji! Wybierz ponownie.\n");
+                    printf("[CLIENT][RESULT] Akcje nie dopasowane, wybierz ponownie!\n");
                     pthread_mutex_lock(&session_mutex);
-                    state = READY_TO_CHOOSE;  
+                    state = READY_TO_CHOOSE;
                     pthread_mutex_unlock(&session_mutex);
                 }
                 else if (strcmp(status, "wait") == 0) {
-                    printf("[CLIENT] Oczekiwanie na drugiego gracza...\n");
+                    printf("[CLIENT][RESULT] Oczekiwanie na drugiego gracza...\n");
                 }
                 else {
-                    printf("[CLIENT] Nieznany status: %s\n", status);
+                    printf("[CLIENT][RESULT] Nieznany status: %s\n", status);
                 }
             }
             break;
         }
-
-
         default:
             printf("[CLIENT] Nieznany typ wiadomości: %d\n", msg_type);
             break;
