@@ -93,15 +93,6 @@ void *handle_client(void *arg) {
 }
 
 int main() {
-    // Inicjalizacja par
-    for (int i = 0; i < MAX_CLIENTS / 2; i++) {
-        pairs[i].client1 = -1;
-        pairs[i].client2 = -1;
-        pairs[i].has_char1 = 0;
-        pairs[i].has_char2 = 0;
-        pthread_mutex_init(&pairs[i].lock, NULL);
-    }
-
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd == -1) {
         perror("socket");
@@ -130,25 +121,14 @@ int main() {
         struct sockaddr_in client_addr;
         socklen_t addrlen = sizeof(client_addr);
         int *client_sock = malloc(sizeof(int));
-        if (!client_sock) {
-            perror("malloc");
-            continue;
-        }
-
         *client_sock = accept(server_fd, (struct sockaddr *)&client_addr, &addrlen);
         if (*client_sock < 0) {
             perror("accept");
-            free(client_sock);
             continue;
         }
 
         pthread_t tid;
-        if (pthread_create(&tid, NULL, handle_client, client_sock) != 0) {
-            perror("pthread_create");
-            close(*client_sock);
-            free(client_sock);
-            continue;
-        }
+        pthread_create(&tid, NULL, handle_client, client_sock);
         pthread_detach(tid);
     }
 
