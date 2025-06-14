@@ -47,7 +47,7 @@ void *client_listener(void *arg) {
     while (1) {
         int len = recv_msg(sockfd, buffer, sizeof(buffer));
         printf("[DEBUG] Received message of length %d from sock=%d\n", len, sockfd);
-        printf("[DEBUG] Parsed action='%s', game_id='%s'\n", action, gid);
+        printf("[DEBUG] Parsed action1='%s', game_id='%s'\n", action1, gid);
         if (len <= 0) {
             printf("[DISCONNECT] Client disconnected (sock=%d)\n", sockfd);
             close(sockfd);
