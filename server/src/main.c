@@ -106,6 +106,8 @@ void *client_listener(void *arg) {
             }
 
             if (s->action1_ready && s->action2_ready) {
+                printf("[DEBUG] Session %d: Both actions received. Comparing '%s' and '%s'\n", i, s->action1, s->action2);
+
                 const char *status;
                 if (strcmp(s->action1, s->action2) == 0) {
                     status = "accepted";
