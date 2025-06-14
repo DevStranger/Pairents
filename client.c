@@ -48,7 +48,7 @@ int main() {
                                           WINDOW_WIDTH, WINDOW_HEIGHT, 0);
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-    TTF_Font *font = TTF_OpenFont("arial.ttf", 16); // zmień na swoją czcionkę lub path
+    TTF_Font *font = TTF_OpenFont("FreeSans.ttf", 16); 
     if (!font) {
         printf("Failed to load font: %s\n", TTF_GetError());
         SDL_DestroyRenderer(renderer);
