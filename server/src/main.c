@@ -149,7 +149,7 @@ int main() {
         *client_sock = client_fd;
 
         pthread_t tid;
-        if (pthread_create(&tid, NULL, handle_client, client_sock) != 0) {
+        if (pthread_create(&tid, NULL, client_listener, client_sock) != 0) {
             perror("pthread_create");
             close(client_fd);
             free(client_sock);
