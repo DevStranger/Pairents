@@ -89,10 +89,10 @@ void *client_listener(void *arg) {
                 printf("[INFO] Session %d: Received action2='%s' from sock=%d\n", i, s->action2, sockfd);
             }
 
-            // Wysyłamy prostą odpowiedź potwierdzającą odbiór akcji
-            char reply[128];
+            // Wysyłamy dokładnie to co było w oryginale (bez zmian)
+            char reply[256];
             snprintf(reply, sizeof(reply),
-                     "{\"type\": %d, \"session_id\": %d, \"status\": \"received\", \"payload\": \"\"}",
+                     "{\"type\":%d,\"session_id\":%d,\"status\":\"wait\",\"payload\":\"\"}",
                      MSG_RESULT, i);
             send_msg(sockfd, reply);
 
@@ -108,72 +108,6 @@ void *client_listener(void *arg) {
         cJSON_Delete(json);
     }
 
-    return NULL;
-}
-
-void *handle_client(void *arg) {
-    printf("[DEBUG] handle_client called, queue_len=%d\n", queue_len);
-
-    int sockfd = *(int *)arg;
-    free(arg);
-
-    printf("[CONNECT] Client connected: sock=%d\n", sockfd);
-
-    pthread_mutex_lock(&queue_mutex);
-
-    client_queue[queue_len++] = sockfd;
-
-    if (queue_len >= 2) {
-        int client1 = client_queue[0];
-        int client2 = client_queue[1];
-
-        memmove(client_queue, client_queue + 2, sizeof(int) * (queue_len - 2));
-        queue_len -= 2;
-
-        if (session_count >= MAX_SESSIONS) {
-            fprintf(stderr, "[ERROR] Max sessions reached\n");
-            close(client1);
-            close(client2);
-            pthread_mutex_unlock(&queue_mutex);
-            return NULL;
-        }
-
-        GameSession *s = &sessions[session_count];
-        assign_game_id(s->game_id, session_count);
-        s->sock1 = client1;
-        s->sock2 = client2;
-        s->action1_ready = false;
-        s->action2_ready = false;
-        s->resolved = false;
-        s->action1[0] = '\0';
-        s->action2[0] = '\0';
-        s->window_start = time(NULL);
-
-        char msg[128];
-        snprintf(msg, sizeof(msg),
-            "{\"type\": %d, \"session_id\": %d, \"payload\": \"%s\", \"status\":\"paired\"}",
-            MSG_PAIR, session_count, s->game_id);
-        send_msg(client1, msg);
-        send_msg(client2, msg);
-
-        printf("[PAIR] Created session %s with clients %d and %d\n",
-               s->game_id, client1, client2);
-
-        session_count++;
-
-        int *c1 = malloc(sizeof(int));
-        int *c2 = malloc(sizeof(int));
-        *c1 = client1;
-        *c2 = client2;
-
-        pthread_t tid1, tid2;
-        pthread_create(&tid1, NULL, client_listener, c1);
-        pthread_create(&tid2, NULL, client_listener, c2);
-        pthread_detach(tid1);
-        pthread_detach(tid2);
-    }
-
-    pthread_mutex_unlock(&queue_mutex);
     return NULL;
 }
 
