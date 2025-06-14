@@ -264,30 +264,17 @@ int main(int argc, char *argv[]) {
                 running = false;
             } else if (event.type == SDL_MOUSEBUTTONDOWN) {
                 int clicked = check_button_click(event.button.x, event.button.y);
-                printf("Kliknięto na pozycji x=%d, y=%d\n", event.button.x, event.button.y);
-                
-                // Jeśli game_id jest pusty, ignoruj kliknięcia guzików
-                pthread_mutex_lock(&session_mutex);
-                bool can_click = (session_id != -1) && (game_id[0] != '\0') && (state == READY_TO_CHOOSE || state == ACTION_MISMATCH || state == ACTION_ACCEPTED);
-                pthread_mutex_unlock(&session_mutex);
-                
-                if (!can_click) {
-                    printf("[CLIENT] Nie możesz kliknąć guzików - brak sesji lub czekaj na drugiego gracza.\n");
-                    continue;
-                }
-
                 if (clicked != -1) {
                     pthread_mutex_lock(&session_mutex);
-                    bool can_click = (session_id != -1) && (game_id[0] != '\0') && 
-                                     (state == READY_TO_CHOOSE || state == ACTION_MISMATCH || state == ACTION_ACCEPTED);
+                    bool can_click = (session_id != -1) && (game_id[0] != '\0') && (state == READY_TO_CHOOSE);
                     pthread_mutex_unlock(&session_mutex);
-                
+            
                     if (!can_click) {
                         printf("[CLIENT] Nie możesz wybrać akcji teraz, czekaj na drugiego gracza.\n");
                     } else {
                         last_clicked_button = clicked;
                         last_click_time = SDL_GetTicks();
-                
+            
                         Message msg = {0};
                         msg.type = MSG_ACTION;
                         pthread_mutex_lock(&session_mutex);
@@ -296,13 +283,13 @@ int main(int argc, char *argv[]) {
                         pthread_mutex_unlock(&session_mutex);
                         msg.action_code = clicked;
                         snprintf(msg.payload, sizeof(msg.payload), "%s", button_labels[clicked]);
-                
+            
                         send_message(&msg);
-                
+            
                         pthread_mutex_lock(&session_mutex);
                         state = WAITING_FOR_OPPONENT;
                         pthread_mutex_unlock(&session_mutex);
-                
+            
                         printf("[CLIENT] Wysłano akcję: %s, czekaj na odpowiedź serwera.\n", button_labels[clicked]);
                     }
                 }
