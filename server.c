@@ -28,7 +28,7 @@ void *handle_client(void *arg) {
     Pair *assigned_pair = NULL;
     int is_first;
 
-    // Szukamy istniejącej pary lub tworzymy nową
+    // Znajdź istniejącą parę lub utwórz nową
     pthread_mutex_lock(&pair_mutex);
     for (int i = 0; i < pair_count; ++i) {
         if (pairs[i].client2 == -1) {
@@ -56,7 +56,7 @@ void *handle_client(void *arg) {
     }
     pthread_mutex_unlock(&pair_mutex);
 
-    // Odbierz wybór przycisku (1 bajt: 0–4)
+    // Odbierz wybór klienta
     unsigned char button_choice;
     if (recv(client_sock, &button_choice, 1, 0) <= 0 || button_choice > 4) {
         perror("recv lub nieprawidłowy wybór");
@@ -75,13 +75,25 @@ void *handle_client(void *arg) {
     }
     pthread_mutex_unlock(&assigned_pair->lock);
 
-    // Poczekaj aż obaj wybiorą
+    // Czekaj aż obaj wybiorą
     while (1) {
         pthread_mutex_lock(&assigned_pair->lock);
         if (assigned_pair->has_choice1 && assigned_pair->has_choice2) {
-            unsigned char to_send = is_first ? assigned_pair->choice2 : assigned_pair->choice1;
+            // Porównaj wybory i wyślij każdemu wynik
+            const char *msg_match = "accepted";
+            const char *msg_mismatch = "mismatch";
+            const char *response = (assigned_pair->choice1 == assigned_pair->choice2) ? msg_match : msg_mismatch;
+
+            if (assigned_pair->client1 != -1)
+                send(assigned_pair->client1, response, strlen(response) + 1, 0);
+            if (assigned_pair->client2 != -1)
+                send(assigned_pair->client2, response, strlen(response) + 1, 0);
+
+            // Resetuj stan pary (jeśli gra jest wielotur)
+            assigned_pair->has_choice1 = 0;
+            assigned_pair->has_choice2 = 0;
+
             pthread_mutex_unlock(&assigned_pair->lock);
-            send(client_sock, &to_send, 1, 0);
             break;
         }
         pthread_mutex_unlock(&assigned_pair->lock);
