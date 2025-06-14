@@ -80,7 +80,6 @@ void *client_listener(void *arg) {
 
             session_found = true;
 
-            // ignoruj wielokrotne kliknięcia i wysyłaj "wait"
             if ((sockfd == s->sock1 && s->action1_ready) ||
                 (sockfd == s->sock2 && s->action2_ready)) {
                 char wait_msg[128];
@@ -94,7 +93,6 @@ void *client_listener(void *arg) {
                 goto next_iteration;
             }
 
-            // zapisujemy wybraną akcję
             if (sockfd == s->sock1) {
                 strncpy(s->action1, action, sizeof(s->action1) - 1);
                 s->action1[sizeof(s->action1) - 1] = '\0';
@@ -108,7 +106,6 @@ void *client_listener(void *arg) {
             }
 
             if (s->action1_ready && s->action2_ready) {
-                // Obie akcje gotowe, porównujemy
                 const char *status;
                 if (strcmp(s->action1, s->action2) == 0) {
                     status = "accepted";
@@ -118,7 +115,8 @@ void *client_listener(void *arg) {
                     printf("[INFO] Session %d: Actions mismatch ('%s' != '%s')\n", i, s->action1, s->action2);
                 }
 
-                // Wysyłamy wynik do obu klientów
+                printf("[RESULT] Session %d result: %s\n", i, status); // <--- DODANE TUTAJ
+
                 char msg[256];
                 snprintf(msg, sizeof(msg),
                          "{\"type\":%d,\"session_id\":%d,\"status\":\"%s\",\"payload\":\"\"}",
@@ -127,13 +125,11 @@ void *client_listener(void *arg) {
                 send_msg(s->sock1, msg);
                 send_msg(s->sock2, msg);
 
-                // Reset flag
                 s->action1_ready = false;
                 s->action2_ready = false;
                 s->action1[0] = '\0';
                 s->action2[0] = '\0';
             } else {
-                // Czekamy na drugą akcję, wysyłamy "wait" tylko temu klientowi
                 char wait_msg[128];
                 snprintf(wait_msg, sizeof(wait_msg),
                          "{\"type\":%d,\"session_id\":%d,\"status\":\"wait\",\"payload\":\"\"}",
@@ -141,28 +137,26 @@ void *client_listener(void *arg) {
                 send_msg(sockfd, wait_msg);
             }
 
-            break;  // sesja znaleziona i obsłużona
+            break;
         }
 
         pthread_mutex_unlock(&queue_mutex);
 
         if (!session_found) {
-            // Można wysłać klientowi info, że sesja nie znaleziona lub ignorować
             printf("[WARN] Session not found for game_id=%s sock=%d\n", gid, sockfd);
         }
 
         cJSON_Delete(json);
 
     next_iteration:
-        ; // pusta instrukcja, miejsce dla goto
+        ;
     }
 
     return NULL;
 }
 
 void *handle_client(void *arg) {
-
-    printf("[DEBUG] handle_client called, queue_len=%d\n", queue_len); // do usuniecia
+    printf("[DEBUG] handle_client called, queue_len=%d\n", queue_len);
 
     int sockfd = *(int *)arg;
     free(arg);
@@ -177,8 +171,6 @@ void *handle_client(void *arg) {
         int client1 = client_queue[0];
         int client2 = client_queue[1];
 
-        printf("[DEBUG] Added client sock %d to queue, new queue_len=%d\n", sockfd, queue_len); // do usuniecia
-        
         memmove(client_queue, client_queue + 2, sizeof(int) * (queue_len - 2));
         queue_len -= 2;
 
@@ -212,25 +204,17 @@ void *handle_client(void *arg) {
                s->game_id, client1, client2);
 
         session_count++;
-        printf("[DEBUG] session_count now: %d\n", session_count); // do usuniecia
+
         int *c1 = malloc(sizeof(int));
         int *c2 = malloc(sizeof(int));
         *c1 = client1;
         *c2 = client2;
 
-        printf("[DEBUG] Session %d created: game_id=%s, sock1=%d, sock2=%d\n",
-       session_count - 1, s->game_id, s->sock1, s->sock2); // do usuniecia
-        
         pthread_t tid1, tid2;
-
-        printf("[DEBUG] Creating client_listener threads for clients %d and %d\n", client1, client2); // do usuniecia
-        
         pthread_create(&tid1, NULL, client_listener, c1);
         pthread_create(&tid2, NULL, client_listener, c2);
-        
         pthread_detach(tid1);
         pthread_detach(tid2);
-
     }
 
     pthread_mutex_unlock(&queue_mutex);
@@ -268,7 +252,6 @@ int main() {
         client_fd = accept(server_fd, (struct sockaddr *)&addr, &addrlen);
         if (client_fd < 0) {
             perror("accept");
-            printf("[MAIN] Accepted client socket %d\n", client_fd);
             continue;
         }
 
