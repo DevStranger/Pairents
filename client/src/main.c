@@ -77,6 +77,7 @@ void handle_server_message(const char *json_str) {
     cJSON *session_json = cJSON_GetObjectItemCaseSensitive(json, "session_id");
     cJSON *payload_json = cJSON_GetObjectItemCaseSensitive(json, "payload");
     cJSON *status_json = cJSON_GetObjectItemCaseSensitive(json, "status");
+    cJSON *player_id_json = cJSON_GetObjectItemCaseSensitive(json, "player_id");
 
     if (!cJSON_IsNumber(type_json)) {
         cJSON_Delete(json);
@@ -92,17 +93,15 @@ void handle_server_message(const char *json_str) {
                 session_id = session_json->valueint;
                 strncpy(game_id, payload_json->valuestring, sizeof(game_id) - 1);
                 game_id[sizeof(game_id) - 1] = '\0';
-        
-                // Pobierz player_id, jeśli jest dostępny w JSON
-                cJSON *player_id_json = cJSON_GetObjectItemCaseSensitive(json, "player_id");
+
                 if (cJSON_IsNumber(player_id_json)) {
                     player_id = player_id_json->valueint;
                     printf("[CLIENT] Ustawiono player_id: %d\n", player_id);
                 }
-        
+
                 state = READY_TO_CHOOSE;
                 pthread_mutex_unlock(&session_mutex);
-        
+
                 printf("[CLIENT] Połączono w sesję ID=%d\n", session_id);
                 printf("[CLIENT] Game ID zapisany: %s\n", game_id);
             }
@@ -114,38 +113,36 @@ void handle_server_message(const char *json_str) {
             }
             break;
 
-       case MSG_RESULT: {
-            const cJSON *status_json = cJSON_GetObjectItemCaseSensitive(json, "status");
-            const cJSON *payload_json = cJSON_GetObjectItemCaseSensitive(json, "payload");
-        
+        case MSG_RESULT:
             if (cJSON_IsString(status_json)) {
                 const char *status = status_json->valuestring;
-        
+
                 if (strcmp(status, "accepted") == 0 && cJSON_IsString(payload_json)) {
-                    printf("[CLIENT][RESULT] Akcja zaakceptowana: %s\n", payload_json->valuestring);
+                    printf("[CLIENT] Obaj gracze wybrali: %s\n", payload_json->valuestring);
                     pthread_mutex_lock(&session_mutex);
                     state = READY_TO_CHOOSE;
                     pthread_mutex_unlock(&session_mutex);
-                }
-                else if (strcmp(status, "mismatch") == 0) {
-                    printf("[CLIENT][RESULT] Akcje nie dopasowane, wybierz ponownie!\n");
+                } else if (strcmp(status, "mismatch") == 0) {
+                    printf("[CLIENT] Nie dopasowano akcji! Wybierz ponownie.\n");
                     pthread_mutex_lock(&session_mutex);
                     state = READY_TO_CHOOSE;
                     pthread_mutex_unlock(&session_mutex);
-                }
-                else if (strcmp(status, "wait") == 0) {
-                    printf("[CLIENT][RESULT] Oczekiwanie na drugiego gracza...\n");
-                }
-                else {
-                    printf("[CLIENT][RESULT] Nieznany status: %s\n", status);
+                } else if (strcmp(status, "wait") == 0) {
+                    printf("[CLIENT] Oczekiwanie na drugiego gracza...\n");
+                    pthread_mutex_lock(&session_mutex);
+                    state = WAITING_FOR_OPPONENT;
+                    pthread_mutex_unlock(&session_mutex);
+                } else {
+                    printf("[CLIENT] Nieznany status: %s\n", status);
                 }
             }
             break;
-        }
+
         default:
             printf("[CLIENT] Nieznany typ wiadomości: %d\n", msg_type);
             break;
     }
+
     cJSON_Delete(json);
 }
 
