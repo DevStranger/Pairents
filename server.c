@@ -11,10 +11,10 @@
 typedef struct {
     int client1;
     int client2;
-    char char1;
-    char char2;
-    int has_char1;
-    int has_char2;
+    int choice1;
+    int choice2;
+    int has_choice1;
+    int has_choice2;
     pthread_mutex_t lock;
 } Pair;
 
@@ -28,7 +28,7 @@ void *handle_client(void *arg) {
     Pair *assigned_pair = NULL;
     int is_first;
 
-    // Szukamy pary lub tworzymy nową
+    // Szukamy istniejącej pary lub tworzymy nową
     pthread_mutex_lock(&pair_mutex);
     for (int i = 0; i < pair_count; ++i) {
         if (pairs[i].client2 == -1) {
@@ -40,7 +40,7 @@ void *handle_client(void *arg) {
     }
     if (!assigned_pair) {
         if (pair_count >= MAX_CLIENTS / 2) {
-            printf("Too many clients!\n");
+            printf("Zbyt wielu klientów!\n");
             close(client_sock);
             pthread_mutex_unlock(&pair_mutex);
             return NULL;
@@ -48,44 +48,44 @@ void *handle_client(void *arg) {
         assigned_pair = &pairs[pair_count];
         assigned_pair->client1 = client_sock;
         assigned_pair->client2 = -1;
-        assigned_pair->has_char1 = 0;
-        assigned_pair->has_char2 = 0;
+        assigned_pair->has_choice1 = 0;
+        assigned_pair->has_choice2 = 0;
         pthread_mutex_init(&assigned_pair->lock, NULL);
         is_first = 1;
         pair_count++;
     }
     pthread_mutex_unlock(&pair_mutex);
 
-    // Odbierz znak
-    char buffer;
-    if (recv(client_sock, &buffer, 1, 0) <= 0) {
-        perror("recv");
+    // Odbierz wybór przycisku (1 bajt: 0–4)
+    unsigned char button_choice;
+    if (recv(client_sock, &button_choice, 1, 0) <= 0 || button_choice > 4) {
+        perror("recv lub nieprawidłowy wybór");
         close(client_sock);
         return NULL;
     }
 
-    // Zapisz znak w parze
+    // Zapisz wybór
     pthread_mutex_lock(&assigned_pair->lock);
     if (is_first) {
-        assigned_pair->char1 = buffer;
-        assigned_pair->has_char1 = 1;
+        assigned_pair->choice1 = button_choice;
+        assigned_pair->has_choice1 = 1;
     } else {
-        assigned_pair->char2 = buffer;
-        assigned_pair->has_char2 = 1;
+        assigned_pair->choice2 = button_choice;
+        assigned_pair->has_choice2 = 1;
     }
     pthread_mutex_unlock(&assigned_pair->lock);
 
-    // Czekaj aż obaj wyślą znaki
+    // Poczekaj aż obaj wybiorą
     while (1) {
         pthread_mutex_lock(&assigned_pair->lock);
-        if (assigned_pair->has_char1 && assigned_pair->has_char2) {
-            char to_send = is_first ? assigned_pair->char2 : assigned_pair->char1;
+        if (assigned_pair->has_choice1 && assigned_pair->has_choice2) {
+            unsigned char to_send = is_first ? assigned_pair->choice2 : assigned_pair->choice1;
             pthread_mutex_unlock(&assigned_pair->lock);
             send(client_sock, &to_send, 1, 0);
             break;
         }
         pthread_mutex_unlock(&assigned_pair->lock);
-        usleep(10000); // odciążenie CPU
+        usleep(10000);
     }
 
     close(client_sock);
@@ -99,6 +99,9 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
+    int opt = 1;
+    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
     struct sockaddr_in address = {
         .sin_family = AF_INET,
         .sin_port = htons(PORT),
@@ -107,23 +110,28 @@ int main() {
 
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
         perror("bind");
+        close(server_fd);
         exit(EXIT_FAILURE);
     }
 
     if (listen(server_fd, MAX_CLIENTS) < 0) {
         perror("listen");
+        close(server_fd);
         exit(EXIT_FAILURE);
     }
 
-    printf("Serwer nasłuchuje na porcie %d\n", PORT);
+    printf("Serwer nasłuchuje na porcie %d...\n", PORT);
 
     while (1) {
         struct sockaddr_in client_addr;
         socklen_t addrlen = sizeof(client_addr);
         int *client_sock = malloc(sizeof(int));
+        if (!client_sock) continue;
+
         *client_sock = accept(server_fd, (struct sockaddr *)&client_addr, &addrlen);
         if (*client_sock < 0) {
             perror("accept");
+            free(client_sock);
             continue;
         }
 
@@ -132,5 +140,6 @@ int main() {
         pthread_detach(tid);
     }
 
+    close(server_fd);
     return 0;
 }
