@@ -92,13 +92,12 @@ void *receive_thread(void *arg) {
 }
 
 int check_button_click(int x, int y) {
-    // tu sprawdzasz, czy kliknięto na konkretny przycisk
-    // na przykład:
-    if (x >= button_x && x <= button_x + button_w &&
-        y >= button_y && y <= button_y + button_h) {
-        return 1; // kliknięcie na przycisk
+    for (int i = 0; i < BUTTON_COUNT; i++) {
+        SDL_Rect r = buttons[i];
+        if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h)
+            return i;
     }
-    return 0; // brak kliknięcia
+    return -1;
 }
 
 int main(int argc, char *argv[]) {
