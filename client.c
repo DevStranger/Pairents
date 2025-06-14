@@ -122,6 +122,7 @@ int main(int argc, char *argv[]) {
 
     unsigned char response[2];
     ssize_t received = recv(sock, response, 2, 0);
+    printf("Odebrano %zd bajtów: [%d, %d]\n", received, response[0], response[1]);
     if (received == 2 && response[0] < 5 && response[1] <= 2) {
         printf("Partner wybrał: %s\n", button_labels[response[0]]);
         switch (response[1]) {
