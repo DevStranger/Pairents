@@ -39,14 +39,14 @@ void assign_game_id(char *buffer, int index) {
 
 void *client_listener(void *arg) {
     int sockfd = *(int *)arg;
-    printf("[DEBUG] Listener active for sock=%d\n", sockfd); // do usuniecia
+    printf("[DEBUG] Listener active for sock=%d\n", sockfd);
     free(arg);
 
     char buffer[1024];
 
     while (1) {
         int len = recv_msg(sockfd, buffer, sizeof(buffer));
-        printf("[DEBUG] Received message of length %d from sock=%d\n", len, sockfd); // do usuniecia
+        printf("[DEBUG] Received message of length %d from sock=%d\n", len, sockfd);
         if (len <= 0) {
             printf("[DISCONNECT] Client disconnected (sock=%d)\n", sockfd);
             close(sockfd);
@@ -72,23 +72,27 @@ void *client_listener(void *arg) {
 
         pthread_mutex_lock(&queue_mutex);
 
+        bool session_found = false;
+
         for (int i = 0; i < session_count; i++) {
             GameSession *s = &sessions[i];
             if (strcmp(s->game_id, gid) != 0) continue;
 
-            // ignoruj wielokrotne kliknięcia
+            session_found = true;
+
+            // ignoruj wielokrotne kliknięcia i wysyłaj "wait"
             if ((sockfd == s->sock1 && s->action1_ready) ||
                 (sockfd == s->sock2 && s->action2_ready)) {
-                // tylko wysyłamy status wait dla tego klienta
                 char wait_msg[128];
                 snprintf(wait_msg, sizeof(wait_msg),
                          "{\"type\":%d,\"session_id\":%d,\"status\":\"wait\",\"payload\":\"\"}",
                          MSG_RESULT, i);
 
-                pthread_mutex_unlock(&queue_mutex);
-
                 send_msg(sockfd, wait_msg);
-                break;
+                // Nie break! tylko unlock i wyjście z pętli/while
+                pthread_mutex_unlock(&queue_mutex);
+                cJSON_Delete(json);
+                goto next_iteration; // lub return NULL; zależnie od struktury
             }
 
             // zapisujemy wybraną akcję
@@ -105,7 +109,7 @@ void *client_listener(void *arg) {
             }
 
             if (s->action1_ready && s->action2_ready) {
-                // Obie akcje są gotowe, porównujemy
+                // Obie akcje gotowe, porównujemy
                 const char *status;
                 if (strcmp(s->action1, s->action2) == 0) {
                     status = "accepted";
@@ -116,38 +120,42 @@ void *client_listener(void *arg) {
                 }
 
                 // Wysyłamy wynik do obu klientów
-                char msg1[256], msg2[256];
-                snprintf(msg1, sizeof(msg1),
-                         "{\"type\":%d,\"session_id\":%d,\"status\":\"%s\",\"payload\":\"\"}",
-                         MSG_RESULT, i, status);
-                snprintf(msg2, sizeof(msg2),
+                char msg[256];
+                snprintf(msg, sizeof(msg),
                          "{\"type\":%d,\"session_id\":%d,\"status\":\"%s\",\"payload\":\"\"}",
                          MSG_RESULT, i, status);
 
-                send_msg(s->sock1, msg1);
-                send_msg(s->sock2, msg2);
+                send_msg(s->sock1, msg);
+                send_msg(s->sock2, msg);
 
-                // Resetujemy flagi na kolejny ruch
+                // Reset flag
                 s->action1_ready = false;
                 s->action2_ready = false;
                 s->action1[0] = '\0';
                 s->action2[0] = '\0';
-
             } else {
-                // Jeśli druga akcja nie nadeszła, wysyłamy tylko "wait" do tego klienta
-                char response_msg[256];
-                snprintf(response_msg, sizeof(response_msg),
+                // Czekamy na drugą akcję, wysyłamy "wait" tylko temu klientowi
+                char wait_msg[128];
+                snprintf(wait_msg, sizeof(wait_msg),
                          "{\"type\":%d,\"session_id\":%d,\"status\":\"wait\",\"payload\":\"\"}",
                          MSG_RESULT, i);
-                send_msg(sockfd, response_msg);
+                send_msg(sockfd, wait_msg);
             }
 
-            pthread_mutex_unlock(&queue_mutex);
-            break;
+            break;  // po znalezieniu sesji możemy przerwać pętlę
         }
 
         pthread_mutex_unlock(&queue_mutex);
+
+        if (!session_found) {
+            // Można wysłać klientowi info, że sesja nie znaleziona lub ignorować
+            printf("[WARN] Session not found for game_id=%s sock=%d\n", gid, sockfd);
+        }
+
         cJSON_Delete(json);
+
+    next_iteration:
+        ; // miejsce etykiety goto, nic nie robi
     }
 
     return NULL;
