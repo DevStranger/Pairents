@@ -79,6 +79,7 @@ void *client_listener(void *arg) {
             // ignoruj wielokrotne kliknięcia
             if ((sockfd == s->sock1 && s->action1_ready) ||
                 (sockfd == s->sock2 && s->action2_ready)) {
+                // tylko wysyłamy status wait dla tego klienta
                 char wait_msg[128];
                 snprintf(wait_msg, sizeof(wait_msg),
                          "{\"type\":%d,\"session_id\":%d,\"status\":\"wait\",\"payload\":\"\"}",
@@ -95,51 +96,23 @@ void *client_listener(void *arg) {
                 strncpy(s->action1, action, sizeof(s->action1) - 1);
                 s->action1[sizeof(s->action1) - 1] = '\0';
                 s->action1_ready = true;
+                printf("[INFO] Session %d: Action1 set to '%s'\n", i, s->action1);
             } else if (sockfd == s->sock2) {
                 strncpy(s->action2, action, sizeof(s->action2) - 1);
                 s->action2[sizeof(s->action2) - 1] = '\0';
                 s->action2_ready = true;
+                printf("[INFO] Session %d: Action2 set to '%s'\n", i, s->action2);
             }
-        
-            // przygotuj zmienne do wysłania po unlocku
-            bool both_ready = s->action1_ready && s->action2_ready;
-            bool accepted = false;
-            char response_msg[256] = {0};
-            int send_sock1 = s->sock1;
-            int send_sock2 = s->sock2;
-        
-            if (both_ready) {
-                if (strcmp(s->action1, s->action2) == 0) {
-                    accepted = true;
-                    snprintf(response_msg, sizeof(response_msg),
-                             "{\"type\":%d,\"session_id\":%d,\"status\":\"accepted\",\"payload\":\"%s\"}",
-                             MSG_RESULT, i, s->action1);
-                } else {
-                    snprintf(response_msg, sizeof(response_msg),
-                             "{\"type\":%d,\"session_id\":%d,\"status\":\"mismatch\",\"payload\":\"\"}",
-                             MSG_RESULT, i);
-                }
-        
-                // reset akcji
-                s->action1_ready = false;
-                s->action2_ready = false;
-                s->action1[0] = '\0';
-                s->action2[0] = '\0';
-            } else {
-                snprintf(response_msg, sizeof(response_msg),
-                         "{\"type\":%d,\"session_id\":%d,\"status\":\"wait\",\"payload\":\"\"}",
-                         MSG_RESULT, i);
-                send_sock1 = sockfd;  // wysyłaj tylko do aktualnego klienta
-                send_sock2 = -1;      // nie wysyłaj do drugiego
-            }
-        
+
+            // Zawsze odsyłamy "wait" do tego klienta, który wysłał akcję
+            char response_msg[256];
+            snprintf(response_msg, sizeof(response_msg),
+                     "{\"type\":%d,\"session_id\":%d,\"status\":\"wait\",\"payload\":\"\"}",
+                     MSG_RESULT, i);
+
             pthread_mutex_unlock(&queue_mutex);
-        
-            // wysyłanie po unlocku mutexa
-            send_msg(send_sock1, response_msg);
-            if (send_sock2 != -1) {
-                send_msg(send_sock2, response_msg);
-            }
+
+            send_msg(sockfd, response_msg);
             break;
         }
 
@@ -212,9 +185,6 @@ void *handle_client(void *arg) {
        session_count - 1, s->game_id, s->sock1, s->sock2); // do usuniecia
         
         pthread_t tid1, tid2;
-
-        printf("[DEBUG] Session %d created: game_id=%s, sock1=%d, sock2=%d\n",
-       session_count - 1, s->game_id, s->sock1, s->sock2); // do usuniecia
 
         printf("[DEBUG] Creating client_listener threads for clients %d and %d\n", client1, client2); // do usuniecia
         
