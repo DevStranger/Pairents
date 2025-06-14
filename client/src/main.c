@@ -123,15 +123,18 @@ void handle_server_message(const char *json_str) {
         
                 if (strcmp(status, "accepted") == 0 && cJSON_IsString(payload_json)) {
                     printf("[CLIENT] Obaj gracze wybrali: %s\n", payload_json->valuestring);
-                    // odblokuj przyciski, przejdź do kolejnej tury itd.
+                    pthread_mutex_lock(&session_mutex);
+                    state = READY_TO_CHOOSE;  
+                    pthread_mutex_unlock(&session_mutex);
                 }
                 else if (strcmp(status, "mismatch") == 0) {
                     printf("[CLIENT] Nie dopasowano akcji! Wybierz ponownie.\n");
-                    // odblokuj przyciski
+                    pthread_mutex_lock(&session_mutex);
+                    state = READY_TO_CHOOSE;  
+                    pthread_mutex_unlock(&session_mutex);
                 }
                 else if (strcmp(status, "wait") == 0) {
                     printf("[CLIENT] Oczekiwanie na drugiego gracza...\n");
-                    // nie rób nic – tylko czekaj
                 }
                 else {
                     printf("[CLIENT] Nieznany status: %s\n", status);
