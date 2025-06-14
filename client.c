@@ -109,18 +109,36 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    // Po kliknięciu - łączymy się z serwerem i wysyłamy wybór
+ // Po kliknięciu - łączymy się z serwerem i wysyłamy wybór
     int sock = connect_to_server();
     if (sock < 0) return 1;
 
     unsigned char choice = (unsigned char)button_clicked;
-    send(sock, &choice, 1, 0);
+    if (send(sock, &choice, 1, 0) != 1) {
+        perror("send");
+        close(sock);
+        return 1;
+    }
 
-    unsigned char response;
-    if (recv(sock, &response, 1, 0) > 0 && response < 5) {
-        printf("Partner wybrał: %s\n", button_labels[response]);
+    unsigned char response[2];
+    ssize_t received = recv(sock, response, 2, 0);
+    if (received == 2 && response[0] < 5 && response[1] <= 2) {
+        printf("Partner wybrał: %s\n", button_labels[response[0]]);
+        switch (response[1]) {
+            case 0:
+                printf("Wynik: różne wybory (mismatch).\n");
+                break;
+            case 1:
+                printf("Wynik: takie same wybory (accepted).\n");
+                break;
+            case 2:
+                printf("Wynik: oczekiwanie na drugiego gracza.\n");
+                break;
+            default:
+                printf("Nieznany status.\n");
+        }
     } else {
-        printf("Błąd odbioru od serwera lub nieprawidłowy wybór partnera.\n");
+        printf("Błąd odbioru od serwera lub nieprawidłowa odpowiedź.\n");
     }
 
     close(sock);
