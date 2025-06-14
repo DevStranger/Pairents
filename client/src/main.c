@@ -147,16 +147,42 @@ void handle_server_message(const char *json_str) {
 }
 
 void *receive_thread(void *arg) {
-    char buffer[MAX_MSG_LEN];
+    char buffer[4096];
+    int buf_len = 0;
+
     while (running) {
-        int len = recv(sockfd, buffer, sizeof(buffer) - 1, 0);
+        char chunk[512];
+        int len = recv(sockfd, chunk, sizeof(chunk) - 1, 0);
         if (len <= 0) {
             printf("[CLIENT] Połączenie zerwane lub błąd odbioru.\n");
             running = false;
             break;
         }
-        buffer[len] = '\0';
-        handle_server_message(buffer);
+        chunk[len] = '\0';
+
+        // dodaj do bufora
+        if (buf_len + len < sizeof(buffer)) {
+            memcpy(buffer + buf_len, chunk, len);
+            buf_len += len;
+            buffer[buf_len] = '\0';
+
+            // przetwarzaj całe linie (oddzielone '\n')
+            char *line_start = buffer;
+            char *newline;
+            while ((newline = strchr(line_start, '\n')) != NULL) {
+                *newline = '\0';
+                handle_server_message(line_start);
+                line_start = newline + 1;
+            }
+
+            // przesuń pozostałość do początku bufora
+            buf_len = strlen(line_start);
+            memmove(buffer, line_start, buf_len);
+            buffer[buf_len] = '\0';
+        } else {
+            printf("[CLIENT] Bufor przepełniony, reset.\n");
+            buf_len = 0;
+        }
     }
     return NULL;
 }
