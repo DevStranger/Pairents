@@ -87,9 +87,9 @@ void *handle_client(void *arg) {
             unsigned char status;
         
             if (assigned_pair->choice1 == assigned_pair->choice2) {
-                status = 0; // accepted
+                status = 1; // accepted
             } else {
-                status = 1; // mismatch
+                status = 0; // mismatch
             }
         
             pthread_mutex_unlock(&assigned_pair->lock);
