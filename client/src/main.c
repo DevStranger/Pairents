@@ -148,24 +148,6 @@ void handle_server_message(const char *json_str) {
             printf("[CLIENT] Nieznany typ wiadomości: %d\n", msg_type);
             break;
     }
-
-     if (cJSON_IsString(status_json)) {
-        const char *status = status_json->valuestring;
-        pthread_mutex_lock(&session_mutex);
-        if (strcmp(status, "accepted") == 0) {
-            printf("[CLIENT] Akcja zaakceptowana.\n");
-            state = ACTION_ACCEPTED;
-        } else if (strcmp(status, "wait") == 0) {
-            printf("[CLIENT] Czekaj na drugiego gracza.\n");
-            state = WAITING_FOR_OPPONENT;
-        } else if (strcmp(status, "mismatch") == 0) {
-            printf("[CLIENT] Akcje nie pasują (mismatch).\n");
-            state = READY_TO_CHOOSE;
-        } else {
-            printf("[CLIENT] Nieznany status: %s\n", status);
-        }
-        pthread_mutex_unlock(&session_mutex);
-    }
     cJSON_Delete(json);
 }
 
