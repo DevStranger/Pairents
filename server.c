@@ -28,7 +28,7 @@ void *handle_client(void *arg) {
     Pair *assigned_pair = NULL;
     int is_first;
 
-    // Znajdź istniejącą parę lub utwórz nową
+    // Przydział do pary — jak wcześniej
     pthread_mutex_lock(&pair_mutex);
     for (int i = 0; i < pair_count; ++i) {
         if (pairs[i].client2 == -1) {
@@ -56,51 +56,50 @@ void *handle_client(void *arg) {
     }
     pthread_mutex_unlock(&pair_mutex);
 
-    // Odbierz wybór klienta
-    unsigned char button_choice;
-    if (recv(client_sock, &button_choice, 1, 0) <= 0 || button_choice > 4) {
-        perror("recv lub nieprawidłowy wybór");
-        close(client_sock);
-        return NULL;
-    }
-
-    // Zapisz wybór
-   pthread_mutex_lock(&assigned_pair->lock);
-    if (is_first) {
-        assigned_pair->choice1 = button_choice;
-        assigned_pair->has_choice1 = 1;
-        printf("Client1 (sock %d) wybrał %d\n", client_sock, button_choice);
-    } else {
-        assigned_pair->choice2 = button_choice;
-        assigned_pair->has_choice2 = 1;
-        printf("Client2 (sock %d) wybrał %d\n", client_sock, button_choice);
-    }
-    pthread_mutex_unlock(&assigned_pair->lock);
-
-
-   // Poczekaj aż obaj wybiorą
     while (1) {
+        unsigned char button_choice;
+        ssize_t rcv = recv(client_sock, &button_choice, 1, 0);
+        if (rcv <= 0) {
+            printf("Klient rozłączył się lub błąd recv\n");
+            break; // Wyjdź z pętli, zakończ połączenie
+        }
+        if (button_choice > 4) {
+            printf("Nieprawidłowy wybór od klienta\n");
+            continue; // Możesz też zakończyć połączenie jeśli chcesz
+        }
+
         pthread_mutex_lock(&assigned_pair->lock);
+        if (is_first) {
+            assigned_pair->choice1 = button_choice;
+            assigned_pair->has_choice1 = 1;
+            printf("Client1 (sock %d) wybrał %d\n", client_sock, button_choice);
+        } else {
+            assigned_pair->choice2 = button_choice;
+            assigned_pair->has_choice2 = 1;
+            printf("Client2 (sock %d) wybrał %d\n", client_sock, button_choice);
+        }
+
+        // Sprawdź czy obaj wybrali
         if (assigned_pair->has_choice1 && assigned_pair->has_choice2) {
-            printf("Para ma wybory: choice1 = %d, choice2 = %d\n", assigned_pair->choice1, assigned_pair->choice2);
             unsigned char partner_choice = is_first ? assigned_pair->choice2 : assigned_pair->choice1;
-            unsigned char status;
-        
-            if (assigned_pair->choice1 == assigned_pair->choice2) {
-                status = 1; // accepted
-            } else {
-                status = 0; // mismatch
-            }
-        
+            unsigned char status = (assigned_pair->choice1 == assigned_pair->choice2) ? 1 : 0;
+
             pthread_mutex_unlock(&assigned_pair->lock);
-        
+
             unsigned char response[2] = {partner_choice, status};
             printf("Wysyłam klientowi [%d, %d]\n", response[0], response[1]);
             send(client_sock, response, 2, 0);
-            break;
+
+            // Reset flag po turze
+            pthread_mutex_lock(&assigned_pair->lock);
+            assigned_pair->has_choice1 = 0;
+            assigned_pair->has_choice2 = 0;
+            pthread_mutex_unlock(&assigned_pair->lock);
+
+        } else {
+            // Czekaj na partnera (odblokuj mutex, nie wysyłaj odpowiedzi jeszcze)
+            pthread_mutex_unlock(&assigned_pair->lock);
         }
-        pthread_mutex_unlock(&assigned_pair->lock);
-        usleep(10000);
     }
 
     close(client_sock);
