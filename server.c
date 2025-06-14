@@ -15,8 +15,6 @@ typedef struct {
     int choice2;
     int has_choice1;
     int has_choice2;
-    int result_ready;
-    unsigned char status_result;
     pthread_mutex_t lock;
 } Pair;
 
@@ -52,7 +50,6 @@ void *handle_client(void *arg) {
         assigned_pair->client2 = -1;
         assigned_pair->has_choice1 = 0;
         assigned_pair->has_choice2 = 0;
-        assigned_pair->result_ready = 0;
         pthread_mutex_init(&assigned_pair->lock, NULL);
         is_first = 1;
         pair_count++;
@@ -78,29 +75,27 @@ void *handle_client(void *arg) {
     }
     pthread_mutex_unlock(&assigned_pair->lock);
 
-    // Poczekaj aż obaj wybiorą
+   // Poczekaj aż obaj wybiorą
     while (1) {
         pthread_mutex_lock(&assigned_pair->lock);
-
         if (assigned_pair->has_choice1 && assigned_pair->has_choice2) {
-            if (!assigned_pair->result_ready) {
-                if (assigned_pair->choice1 == assigned_pair->choice2) {
-                    assigned_pair->status_result = 2; // accepted
-                } else {
-                    assigned_pair->status_result = 1; // mismatch
-                }
-                assigned_pair->result_ready = 1;
-            }
-
             unsigned char partner_choice = is_first ? assigned_pair->choice2 : assigned_pair->choice1;
-            unsigned char response[2] = {partner_choice, assigned_pair->status_result};
+            unsigned char status;
+
+            // Porównujemy wybór klienta z partner_choice (odpowiedź[0])
+            if ((is_first && assigned_pair->choice1 == partner_choice) ||
+                (!is_first && assigned_pair->choice2 == partner_choice)) {
+                status = 2; // accepted
+            } else {
+                status = 1; // mismatch
+            }
             pthread_mutex_unlock(&assigned_pair->lock);
 
+            unsigned char response[2] = {partner_choice, status};
             printf("Wysyłam klientowi [%d, %d]\n", response[0], response[1]);
             send(client_sock, response, 2, 0);
             break;
         }
-
         pthread_mutex_unlock(&assigned_pair->lock);
         usleep(10000);
     }
