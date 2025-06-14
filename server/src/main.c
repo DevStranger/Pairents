@@ -89,10 +89,9 @@ void *client_listener(void *arg) {
                          MSG_RESULT, i);
 
                 send_msg(sockfd, wait_msg);
-                // Nie break! tylko unlock i wyjście z pętli/while
                 pthread_mutex_unlock(&queue_mutex);
                 cJSON_Delete(json);
-                goto next_iteration; // lub return NULL; zależnie od struktury
+                goto next_iteration;
             }
 
             // zapisujemy wybraną akcję
@@ -142,7 +141,7 @@ void *client_listener(void *arg) {
                 send_msg(sockfd, wait_msg);
             }
 
-            break;  // po znalezieniu sesji możemy przerwać pętlę
+            break;  // sesja znaleziona i obsłużona
         }
 
         pthread_mutex_unlock(&queue_mutex);
@@ -155,7 +154,7 @@ void *client_listener(void *arg) {
         cJSON_Delete(json);
 
     next_iteration:
-        ; // miejsce etykiety goto, nic nie robi
+        ; // pusta instrukcja, miejsce dla goto
     }
 
     return NULL;
