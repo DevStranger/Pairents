@@ -75,25 +75,22 @@ void *handle_client(void *arg) {
     }
     pthread_mutex_unlock(&assigned_pair->lock);
 
-    // Czekaj aż obaj wybiorą
+   // Poczekaj aż obaj wybiorą
     while (1) {
         pthread_mutex_lock(&assigned_pair->lock);
         if (assigned_pair->has_choice1 && assigned_pair->has_choice2) {
-            // Porównaj wybory i wyślij każdemu wynik
-            const char *msg_match = "accepted";
-            const char *msg_mismatch = "mismatch";
-            const char *response = (assigned_pair->choice1 == assigned_pair->choice2) ? msg_match : msg_mismatch;
-
-            if (assigned_pair->client1 != -1)
-                send(assigned_pair->client1, response, strlen(response) + 1, 0);
-            if (assigned_pair->client2 != -1)
-                send(assigned_pair->client2, response, strlen(response) + 1, 0);
-
-            // Resetuj stan pary (jeśli gra jest wielotur)
-            assigned_pair->has_choice1 = 0;
-            assigned_pair->has_choice2 = 0;
-
+            unsigned char partner_choice = is_first ? assigned_pair->choice2 : assigned_pair->choice1;
+            unsigned char status;
+            if (assigned_pair->choice1 == assigned_pair->choice2) {
+                status = 2; // accepted
+            } else {
+                status = 1; // mismatch
+            }
             pthread_mutex_unlock(&assigned_pair->lock);
+    
+            unsigned char response[2] = {partner_choice, status};
+            printf("Wysyłam klientowi [%d, %d]\n", response[0], response[1]);
+            send(client_sock, response, 2, 0);
             break;
         }
         pthread_mutex_unlock(&assigned_pair->lock);
