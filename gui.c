@@ -214,8 +214,7 @@ void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Fon
     }
 
     // Rysujemy zająca ASCII art po prawej stronie nad guzikami obok wskaźników
-    // Ustaw pozycję (x,y) zajaca np.:
-    int bunny_x = WINDOW_WIDTH - 200;  // dostosuj wg szerokości okna i potrzeb
+    int bunny_x = WINDOW_WIDTH - 200; 
     int bunny_y = WINDOW_HEIGHT - BUTTON_HEIGHT - 20 - 150; // nad guzikami (od góry od guzików)
 
     SDL_Color white = {255, 255, 255, 255};
