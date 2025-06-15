@@ -2,6 +2,8 @@
 #define CREATURE_H
 
 #include <time.h>
+#include <SDL2/SDL.h>
+#include <stdint.h>
 
 typedef struct {
     int hunger;
