@@ -203,8 +203,8 @@ void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Fon
 
     // Rysujemy ASCII Arta
     SDL_Color white = {255, 255, 255, 255};
-    int art_x = 445;  
-    int art_y = 80;
+    int art_x = 425;  
+    int art_y = 110;
     draw_ascii_art(gui->renderer, gui->font_ascii_art, creature->ascii_art, art_x, art_y, white);
 
     // Rysujemy guziki
