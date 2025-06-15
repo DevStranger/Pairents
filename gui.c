@@ -114,7 +114,7 @@ void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text,
     SDL_Color pink   = {255, 105, 180, 255};
     SDL_Color orange = {255, 140, 0, 255};
 
-    int base_x = WINDOW_WIDTH - 380;
+    int base_x = 20;
     int base_y = 20;
     int line_height = 30;
 
