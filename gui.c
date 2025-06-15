@@ -87,17 +87,22 @@ int gui_init(GUI *gui) {
         return -1;
     }
 
-    // Pozycje przycisków z marginesem 20 po lewej i prawej i odstępem 10 pomiędzy
-    int total_margin = 20 * 2;  // marginesy po obu stronach
-    int spacing = 10;            // odstęp między guzikami
-    int total_spacing = spacing * (BUTTON_COUNT - 1);
-    int total_buttons_width = BUTTON_WIDTH * BUTTON_COUNT;
-    int start_x = 20;  // lewy margines
+    // Parametry układu
+    int margin = 20;              // margines z lewej i prawej
+    int spacing = 10;             // odstęp między guzikami
+    int available_width = WINDOW_WIDTH - 2 * margin;
+
+    // Dynamiczne obliczenie szerokości guzika
+    int button_width = (available_width - spacing * (BUTTON_COUNT - 1)) / BUTTON_COUNT;
+
+    // Obliczamy start_x, by całość była wyśrodkowana
+    int total_buttons_width = button_width * BUTTON_COUNT + spacing * (BUTTON_COUNT - 1);
+    int start_x = (WINDOW_WIDTH - total_buttons_width) / 2;
 
     for (int i = 0; i < BUTTON_COUNT; ++i) {
-        gui->buttons[i].x = start_x + i * (BUTTON_WIDTH + spacing);
-        gui->buttons[i].y = WINDOW_HEIGHT - BUTTON_HEIGHT - 20;
-        gui->buttons[i].w = BUTTON_WIDTH;
+        gui->buttons[i].x = start_x + i * (button_width + spacing);
+        gui->buttons[i].y = WINDOW_HEIGHT - BUTTON_HEIGHT - margin;
+        gui->buttons[i].w = button_width;
         gui->buttons[i].h = BUTTON_HEIGHT;
     }
 
