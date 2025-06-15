@@ -197,7 +197,12 @@ int main(int argc, char *argv[]) {
                         
                         if (partner_choice <= 4) {
                             printf("Akcja: %s\n", action_ascii_files[partner_choice]);
-                            set_temp_ascii_art(&creature, action_ascii_files[partner_choice], 8000); // 8 sekund
+                            char *ascii_art = load_ascii_art(action_ascii_files[partner_choice]);
+                            if (ascii_art) {
+                                set_temp_ascii_art(&creature, ascii_art, 8000); // 8 sekund
+                            } else {
+                                fprintf(stderr, "Nie udało się załadować pliku ASCII art: %s\n", action_ascii_files[partner_choice]);
+                            }
                         }
 
                         // Odbierz stan stwora od serwera
