@@ -3,21 +3,27 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Przechowuje pozycje przycisków
 SDL_Rect buttons[BUTTON_COUNT];
 
+// Emoji i etykiety przycisków
 const char *button_symbols[BUTTON_COUNT] = { "🍓", "📖", "💤", "🤗", "🎡" };
 const char *button_labels[BUTTON_COUNT]  = { "Feed", "Read", "Sleep", "Hug", "Play" };
 
+// Zasoby wewnętrzne GUI
 static char *bunny_art = NULL;
 static TTF_Font *font_text  = NULL;
 static TTF_Font *font_emoji = NULL;
 static TTF_Font *font_bunny = NULL;
 
-// Do animacji przycisku klikniętego
+// Do animacji kliknięcia
 static int last_clicked_button = -1;
 static Uint32 last_click_time = 0;
 
-// Ładuje ASCII art z pliku
+// ==========================================
+// Pomocnicze funkcje lokalne (statyczne)
+// ==========================================
+
 static char* load_ascii_art_from_file(const char *filepath) {
     FILE *f = fopen(filepath, "r");
     if (!f) {
@@ -84,7 +90,7 @@ static void draw_bar(SDL_Renderer *r, int x, int y, int w, int h, int value, SDL
     SDL_RenderFillRect(r, &fg);
 }
 
-void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font_emoji, SDL_Color color) {
+static void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font_emoji, SDL_Color color) {
     Uint32 now = SDL_GetTicks();
 
     for (int i = 0; i < BUTTON_COUNT; i++) {
@@ -108,12 +114,16 @@ void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Font *font
 
         draw_text(renderer, font_emoji, button_symbols[i], x, y, color);
 
-        int w_symbol = 0, h_symbol = 0;
-        TTF_SizeText(font_emoji, button_symbols[i], &w_symbol, &h_symbol);
+        int w_symbol = 0;
+        TTF_SizeText(font_emoji, button_symbols[i], &w_symbol, NULL);
 
         draw_text(renderer, font_regular, button_labels[i], x + w_symbol + 5, y, color);
     }
 }
+
+// ==========================================
+// Funkcje API zgodne z GUI.h
+// ==========================================
 
 int gui_init(SDL_Renderer *renderer) {
     font_text  = TTF_OpenFont("client/assets/fonts/MatrixtypeDisplayBold-6R4e6.ttf", 14);
@@ -123,11 +133,13 @@ int gui_init(SDL_Renderer *renderer) {
         fprintf(stderr, "Brak czcionki! %s\n", TTF_GetError());
         return 0;
     }
+
     bunny_art = load_ascii_art_from_file("client/assets/bunny/default.txt");
     if (!bunny_art) {
         fprintf(stderr, "Nie można załadować ASCII art\n");
         return 0;
     }
+
     return 1;
 }
 
@@ -149,8 +161,7 @@ void gui_cleanup(void) {
     }
 }
 
-// Rysowanie GUI - tutaj można rozszerzyć o paski itp.
-void gui_render(SDL_Renderer *renderer) {
+void gui_render(SDL_Renderer *renderer, const creature_t *creature) {
     SDL_Color white  = {255, 255, 255, 255};
     SDL_Color green  = {0, 200, 0, 255};
     SDL_Color blue   = {0, 100, 255, 255};
@@ -159,18 +170,15 @@ void gui_render(SDL_Renderer *renderer) {
     SDL_Color pink   = {255, 105, 180, 255};
     SDL_Color orange = {255, 140, 0, 255};
 
-    // Czyszczenie ekranu
     SDL_SetRenderDrawColor(renderer, 100, 149, 237, 255);
     SDL_RenderClear(renderer);
 
-    // Tutaj jako przykład - rysowanie kilku pasków ze statystykami
-    // (przekaż wartości w implementacji klienta)
-    int hunger = 75;
-    int happiness = 60;
-    int sleep = 45;
-    int health = 90;
-    int growth = 30;
-    int love = 80;
+    int hunger = creature->hunger;
+    int happiness = creature->happiness;
+    int sleep = creature->sleep;
+    int health = creature->health;
+    int growth = creature->growth;
+    int love = creature->love;
 
     draw_text(renderer, font_emoji, "🍎", 20,  40, white);
     draw_text(renderer, font_text, "Hunger", 60, 40, white);
@@ -182,44 +190,37 @@ void gui_render(SDL_Renderer *renderer) {
     draw_text(renderer, font_emoji, "🌼", 20,  70, white);
     draw_text(renderer, font_text, "Happiness", 60, 70, white);
     draw_bar(renderer, 155, 72, 200, 16, happiness, yellow);
-    char happiness_value[8];
-    sprintf(happiness_value, "%d%%", happiness);
-    draw_text(renderer, font_text, happiness_value, 360, 70, white);
+    sprintf(hunger_value, "%d%%", happiness);
+    draw_text(renderer, font_text, hunger_value, 360, 70, white);
 
     draw_text(renderer, font_emoji, "💤", 20, 100, white);
     draw_text(renderer, font_text, "Sleep", 60, 100, white);
     draw_bar(renderer, 155, 102, 200, 16, sleep, blue);
-    char sleep_value[8];
-    sprintf(sleep_value, "%d%%", sleep);
-    draw_text(renderer, font_text, sleep_value, 360, 100, white);
+    sprintf(hunger_value, "%d%%", sleep);
+    draw_text(renderer, font_text, hunger_value, 360, 100, white);
 
     draw_text(renderer, font_emoji, "💊", 20, 130, white);
     draw_text(renderer, font_text, "Health", 60, 130, white);
     draw_bar(renderer, 155, 132, 200, 16, health, red);
-    char health_value[8];
-    sprintf(health_value, "%d%%", health);
-    draw_text(renderer, font_text, health_value, 360, 130, white);
+    sprintf(hunger_value, "%d%%", health);
+    draw_text(renderer, font_text, hunger_value, 360, 130, white);
 
     draw_text(renderer, font_emoji, "🌱", 20, 160, white);
     draw_text(renderer, font_text, "Growth", 60, 160, white);
     draw_bar(renderer, 155, 162, 200, 16, growth, pink);
-    char growth_value[8];
-    sprintf(growth_value, "%d%%", growth);
-    draw_text(renderer, font_text, growth_value, 360, 160, white);
+    sprintf(hunger_value, "%d%%", growth);
+    draw_text(renderer, font_text, hunger_value, 360, 160, white);
 
     draw_text(renderer, font_emoji, "❤️", 20, 190, white);
     draw_text(renderer, font_text, "Love", 60, 190, white);
     draw_bar(renderer, 155, 192, 200, 16, love, orange);
-    char love_value[8];
-    sprintf(love_value, "%d%%", love);
-    draw_text(renderer, font_text, love_value, 360, 190, white);
+    sprintf(hunger_value, "%d%%", love);
+    draw_text(renderer, font_text, hunger_value, 360, 190, white);
 
-    // Rysowanie ASCII art
     if (bunny_art) {
         draw_ascii_art(renderer, font_bunny, bunny_art, 450, 50, white);
     }
 
-    // Rysowanie przycisków
     draw_buttons(renderer, font_text, font_emoji, white);
 }
 
