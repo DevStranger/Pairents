@@ -9,12 +9,22 @@
 #define MAX_CLIENTS 10
 
 typedef struct {
+    unsigned char hunger;
+    unsigned char happiness;
+    unsigned char sleep;
+    unsigned char health;
+    unsigned char growth;
+    unsigned char love;
+} Creature;
+
+typedef struct {
     int client1;
     int client2;
     int choice1;
     int choice2;
     int has_choice1;
     int has_choice2;
+    Creature creature;       
     pthread_mutex_t lock;
 } Pair;
 
@@ -88,25 +98,38 @@ void *handle_client(void *arg) {
         }
 
         // Obaj gracze wybrali — rozstrzygamy turę
-        if (assigned_pair->has_choice1 && assigned_pair->has_choice2) {
+      if (assigned_pair->has_choice1 && assigned_pair->has_choice2) {
             unsigned char status = (assigned_pair->choice1 == assigned_pair->choice2) ? 1 : 0;
             unsigned char c1 = assigned_pair->choice1;
             unsigned char c2 = assigned_pair->choice2;
-
+        
+            // Jeśli zaakceptowano, zaktualizuj stan stwora (przykładowo)
+            if (status == 1) {
+                // Przykład prostej aktualizacji na podstawie akcji
+                assigned_pair->creature.hunger = (assigned_pair->creature.hunger > 5) ? assigned_pair->creature.hunger - 5 : 0;
+                assigned_pair->creature.happiness = (assigned_pair->creature.happiness + 3 < 100) ? assigned_pair->creature.happiness + 3 : 100;
+                // itd. DO UZUPEŁNIENIA
+            }
+        
             int sock1 = assigned_pair->client1;
             int sock2 = assigned_pair->client2;
-
-            pthread_mutex_unlock(&assigned_pair->lock); // przed wysłaniem (bez blokowania!)
-
+        
+            pthread_mutex_unlock(&assigned_pair->lock);
+        
+            // Wysyłaj status akcji
             if (sock1 != -1) send_response(sock1, c2, status);
             if (sock2 != -1) send_response(sock2, c1, status);
-
-            // Zresetuj dane tury
+        
+            // Jeśli accepted, wyślij też stan stwora do obu klientów
+            if (status == 1) {
+                if (sock1 != -1) send(sock1, &assigned_pair->creature, sizeof(Creature), 0);
+                if (sock2 != -1) send(sock2, &assigned_pair->creature, sizeof(Creature), 0);
+            }
+        
             pthread_mutex_lock(&assigned_pair->lock);
             assigned_pair->has_choice1 = 0;
             assigned_pair->has_choice2 = 0;
             pthread_mutex_unlock(&assigned_pair->lock);
-
         } else {
             // Jeden gracz już wybrał — wysyłamy info o czekaniu
             unsigned char partner_choice = 0; // nieważne
