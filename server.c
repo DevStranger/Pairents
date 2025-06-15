@@ -79,36 +79,34 @@ void *handle_client(void *arg) {
         }
 
         if (button_choice > 4) continue;
-
-        pthread_mutex_lock(&assigned_pair->lock);
-        if (is_first) {
-            if (assigned_pair->has_choice1) {
-                pthread_mutex_unlock(&assigned_pair->lock);
-                continue; // już wybrał w tej turze
+            pthread_mutex_lock(&pair_mutex);
+            pthread_mutex_lock(&assigned_pair->lock);
+            
+            if (is_first) {
+                assigned_pair->client1 = -1;
+                assigned_pair->has_choice1 = 0;
+            } else {
+                assigned_pair->client2 = -1;
+                assigned_pair->has_choice2 = 0;
             }
-            assigned_pair->choice1 = button_choice;
-            assigned_pair->has_choice1 = 1;
-        } else {
-            if (assigned_pair->has_choice2) {
-                pthread_mutex_unlock(&assigned_pair->lock);
-                continue;
+            
+            // Jeśli para nie ma żadnego klienta, można ją wyczyścić
+            if (assigned_pair->client1 == -1 && assigned_pair->client2 == -1) {
+                // czyszczenie lol
             }
-            assigned_pair->choice2 = button_choice;
-            assigned_pair->has_choice2 = 1;
-        }
+            
+            pthread_mutex_unlock(&assigned_pair->lock);
+            pthread_mutex_unlock(&pair_mutex);
 
         // Obaj gracze wybrali — rozstrzygamy turę
-      if (assigned_pair->has_choice1 && assigned_pair->has_choice2) {
+        if (assigned_pair->has_choice1 && assigned_pair->has_choice2) {
             unsigned char status = (assigned_pair->choice1 == assigned_pair->choice2) ? 1 : 0;
             unsigned char c1 = assigned_pair->choice1;
             unsigned char c2 = assigned_pair->choice2;
         
             // Jeśli zaakceptowano, zaktualizuj stan stwora (przykładowo)
             if (status == 1) {
-                // Przykład prostej aktualizacji na podstawie akcji
-                assigned_pair->creature.hunger = (assigned_pair->creature.hunger > 5) ? assigned_pair->creature.hunger - 5 : 0;
-                assigned_pair->creature.happiness = (assigned_pair->creature.happiness + 3 < 100) ? assigned_pair->creature.happiness + 3 : 100;
-                // itd. DO UZUPEŁNIENIA
+                  apply_action(&assigned_pair->creature, assigned_pair->choice1);
             }
         
             int sock1 = assigned_pair->client1;
@@ -150,6 +148,13 @@ int main() {
         perror("socket");
         exit(EXIT_FAILURE);
     }
+
+    assigned_pair->client1 = client_sock;
+    assigned_pair->client2 = -1;
+    assigned_pair->has_choice1 = 0;
+    assigned_pair->has_choice2 = 0;
+    memset(&assigned_pair->creature, 0, sizeof(Creature)); // opcjonalnie wyzeruj stwora
+    pthread_mutex_init(&assigned_pair->lock, NULL);
 
     int opt = 1;
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
