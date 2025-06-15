@@ -17,7 +17,9 @@ typedef struct {
     time_t last_update3;
     time_t last_update4;
 
-    char *ascii_art;
+    char *ascii_art;          // domyślny ASCII art
+    char *temp_ascii_art;     // tymczasowy ASCII art po akcji
+    Uint32 temp_art_end_time; // czas kiedy przestajemy wyświetlać temp ascii art (SDL_GetTicks ms)
 } Creature;
 
 void init_creature(Creature *c);
