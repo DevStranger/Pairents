@@ -16,6 +16,7 @@ typedef struct {
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Rect buttons[BUTTON_COUNT];
+    char *ascii_art;
 } GUI;
 
 // Inicjalizacja SDL, TTF, okna i renderera oraz pozycji przycisków
