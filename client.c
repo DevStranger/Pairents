@@ -72,19 +72,6 @@ char *load_ascii_art(const char *filename) {
     return buffer;
 }
 
-void set_temp_ascii_art(Creature *c, const char *filename, Uint32 duration_ms) {
-    if (c->temp_ascii_art) {
-        free(c->temp_ascii_art);
-        c->temp_ascii_art = NULL;
-    }
-    c->temp_ascii_art = load_ascii_art(filename);
-    if (c->temp_ascii_art) {
-        c->temp_art_end_time = SDL_GetTicks() + duration_ms;
-    } else {
-        c->temp_art_end_time = 0;
-    }
-}
-
 void apply_action(Creature *c, unsigned char action) {
     switch (action) {
         case 0: // Fed
