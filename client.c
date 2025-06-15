@@ -83,9 +83,9 @@ int main(int argc, char *argv[]) {
 
     // Asynchroniczna aktualizacja stanu stwora
     typedef struct {
-    char buffer[sizeof(Creature)];
-    size_t received;
-    int receiving_creature; // flaga czy jesteśmy w trakcie odbierania stwora
+        char buffer[sizeof(Creature)];
+        size_t received;
+        int receiving_creature; // flaga czy jesteśmy w trakcie odbierania stwora
     } ReceiveState;
 
     ReceiveState recv_state = { .received = 0, .receiving_creature = 0 };
@@ -208,6 +208,7 @@ int main(int argc, char *argv[]) {
                     running = 0;
                 }
             }
+        }
         
         // Aktualizuj stan stwora co iterację
         update_creature(&creature);
