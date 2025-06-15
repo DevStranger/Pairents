@@ -101,6 +101,41 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    TTF_Font *font_bunny = TTF_OpenFont("assets/MatrixtypeDisplayBold-6R4e6.ttf.ttf", 6);
+    if (!font_bunny) {
+        fprintf(stderr, "TTF_OpenFont font_bunny failed: %s\n", TTF_GetError());
+        TTF_CloseFont(font_text);
+        TTF_CloseFont(font_emoji);
+        gui_destroy(&gui);
+        return 1;
+    }
+
+    FILE *f = fopen("assets/default.txt", "r");
+    if (!f) {
+        perror("fopen default.txt");
+        TTF_CloseFont(font_bunny);
+        TTF_CloseFont(font_text);
+        TTF_CloseFont(font_emoji);
+        gui_destroy(&gui);
+        return 1;
+    }
+    fseek(f, 0, SEEK_END);
+    long filesize = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    char *bunny_ascii = malloc(filesize + 1);
+    if (!bunny_ascii) {
+        fprintf(stderr, "malloc failed\n");
+        fclose(f);
+        TTF_CloseFont(font_bunny);
+        TTF_CloseFont(font_text);
+        TTF_CloseFont(font_emoji);
+        gui_destroy(&gui);
+        return 1;
+    }
+    fread(bunny_ascii, 1, filesize, f);
+    bunny_ascii[filesize] = '\0';
+    fclose(f);
+
     Creature creature = {
         .hunger = 70,
         .happiness = 80,
@@ -221,7 +256,7 @@ int main(int argc, char *argv[]) {
         SDL_RenderClear(gui.renderer);
 
         // Rysuj GUI z aktualnym stanem
-        gui_draw_buttons(&gui, &creature, font_text, font_emoji);
+        gui_draw_buttons(&gui, &creature, font_text, font_emoji, font_bunny, bunny_ascii);
 
         // Wyświetl nowy frame
         SDL_RenderPresent(gui.renderer);
@@ -232,6 +267,8 @@ int main(int argc, char *argv[]) {
     close(sock);
     TTF_CloseFont(font_text);
     TTF_CloseFont(font_emoji);
+    free(bunny_ascii);
+    TTF_CloseFont(font_bunny);
     gui_destroy(&gui);
     return 0;
 }
