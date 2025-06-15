@@ -6,23 +6,25 @@
 
 #define BUTTON_COUNT 5
 
-// Przechowuje pozycje przycisków (do obsługi kliknięć)
-extern SDL_Rect buttons[BUTTON_COUNT];
+// Inicjalizacja SDL i czcionek
+int GUI_Init(void);
 
-// Symbole emoji i napisy przycisków
-extern const char *button_symbols[BUTTON_COUNT];
-extern const char *button_labels[BUTTON_COUNT];
+// Tworzy okno z tytułem
+int GUI_CreateWindow(const char *title);
 
-// Inicjalizacja GUI (ładowanie czcionek, ASCII art)
-int gui_init(SDL_Renderer *renderer);
+// Rysuje przyciski
+void GUI_DrawButtons(SDL_Rect buttons[]);
 
-// Sprzątanie zasobów GUI
-void gui_cleanup(void);
+// Inicjalizuje pozycje przycisków
+void GUI_InitButtons(SDL_Rect buttons[]);
 
-// Rysowanie całego GUI (pasek, ASCII art, przyciski)
-void gui_render(SDL_Renderer *renderer);
+// Obsługuje kliknięcia, zwraca indeks klikniętego przycisku lub -1
+int GUI_HandleClick(int x, int y, SDL_Rect buttons[]);
 
-// Sprawdza, czy kliknięto któryś przycisk, zwraca indeks lub -1
-int gui_check_button_click(int x, int y);
+// Zamyka okno i renderer
+void GUI_Destroy(void);
+
+// Czyści SDL i TTF
+void GUI_Quit(void);
 
 #endif // GUI_H
