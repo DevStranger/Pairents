@@ -131,7 +131,7 @@ int main(int argc, char *argv[]) {
         .sleep = 60,
         .health = 90,
         .growth = 50,
-        .love = 75
+        .love = 75,
         .ascii_art = NULL
     };
 
