@@ -36,6 +36,18 @@ int connect_to_server() {
     return sock;
 }
 
+void draw_buttons(SDL_Renderer *ren, SDL_Rect *buttons) {
+    SDL_SetRenderDrawColor(ren, 200, 200, 200, 255);
+    SDL_RenderClear(ren);
+
+    for (int i = 0; i < 5; ++i) {
+        SDL_SetRenderDrawColor(ren, 100, 100, 255, 255);
+        SDL_RenderFillRect(ren, &buttons[i]);
+    }
+
+    SDL_RenderPresent(ren);
+}
+
 int main(int argc, char *argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr, "SDL Init Error: %s\n", SDL_GetError());
@@ -57,11 +69,15 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    int running = 1;
-    int button_clicked = -1;
-    SDL_Event e;
+    // Stałe połączenie z serwerem
+    int sock = connect_to_server();
+    if (sock < 0) {
+        SDL_DestroyRenderer(ren);
+        SDL_DestroyWindow(win);
+        SDL_Quit();
+        return 1;
+    }
 
-    // Przyciski
     SDL_Rect buttons[5];
     for (int i = 0; i < 5; ++i) {
         buttons[i].x = 20 + i * (BUTTON_WIDTH + 10);
@@ -70,78 +86,71 @@ int main(int argc, char *argv[]) {
         buttons[i].h = BUTTON_HEIGHT;
     }
 
+    int running = 1;
+    int waiting_for_response = 0;
+    SDL_Event e;
+
+    draw_buttons(ren, buttons);
+
     while (running) {
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) {
                 running = 0;
-            } else if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
+            } else if (!waiting_for_response &&
+                       e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
                 int mx = e.button.x;
                 int my = e.button.y;
                 for (int i = 0; i < 5; ++i) {
                     if (mx >= buttons[i].x && mx <= buttons[i].x + buttons[i].w &&
                         my >= buttons[i].y && my <= buttons[i].y + buttons[i].h) {
-                        button_clicked = i;
-                        running = 0;
+
+                        // Wysłanie wyboru do serwera
+                        unsigned char choice = (unsigned char)i;
+                        if (send(sock, &choice, 1, 0) != 1) {
+                            perror("send");
+                            running = 0;
+                            break;
+                        }
+
+                        waiting_for_response = 1;
+
+                        // Odbieranie odpowiedzi
+                        unsigned char response[2];
+                        ssize_t received = recv(sock, response, 2, 0);
+                        if (received == 2 && response[0] < 5 && response[1] <= 2) {
+                            printf("Partner wybrał: %s\n", button_labels[response[0]]);
+                            switch (response[1]) {
+                                case 0:
+                                    printf("Wynik: różne wybory (mismatch).\n");
+                                    break;
+                                case 1:
+                                    printf("Wynik: takie same wybory (accepted).\n");
+                                    break;
+                                case 2:
+                                    printf("Wynik: oczekiwanie na drugiego gracza.\n");
+                                    break;
+                                default:
+                                    printf("Nieznany status.\n");
+                            }
+                        } else {
+                            printf("Błąd odbioru od serwera lub nieprawidłowa odpowiedź.\n");
+                            running = 0;
+                        }
+
+                        waiting_for_response = 0;
+                        draw_buttons(ren, buttons);
                         break;
                     }
                 }
             }
         }
 
-        SDL_SetRenderDrawColor(ren, 200, 200, 200, 255);
-        SDL_RenderClear(ren);
-
-        // Renderuj przyciski
-        for (int i = 0; i < 5; ++i) {
-            SDL_SetRenderDrawColor(ren, 100, 100, 255, 255);
-            SDL_RenderFillRect(ren, &buttons[i]);
-        }
-
-        SDL_RenderPresent(ren);
-    }
-
-    SDL_DestroyRenderer(ren);
-    SDL_DestroyWindow(win);
-    SDL_Quit();
-
-    if (button_clicked == -1) {
-        printf("Nie wybrano żadnego przycisku.\n");
-        return 0;
-    }
-
- // Po kliknięciu - łączymy się z serwerem i wysyłamy wybór
-    int sock = connect_to_server();
-    if (sock < 0) return 1;
-
-    unsigned char choice = (unsigned char)button_clicked;
-    if (send(sock, &choice, 1, 0) != 1) {
-        perror("send");
-        close(sock);
-        return 1;
-    }
-
-    unsigned char response[2];
-    ssize_t received = recv(sock, response, 2, 0);
-    printf("Odebrano %zd bajtów: [%d, %d]\n", received, response[0], response[1]);
-    if (received == 2 && response[0] < 5 && response[1] <= 2) {
-        printf("Partner wybrał: %s\n", button_labels[response[0]]);
-        switch (response[1]) {
-            case 0:
-                printf("Wynik: różne wybory (mismatch).\n");
-                break;
-            case 1:
-                printf("Wynik: takie same wybory (accepted).\n");
-                break;
-            case 2:
-                printf("Wynik: oczekiwanie na drugiego gracza.\n");
-                break;
-            default:
-                printf("Nieznany status.\n");
-        }
-    } else {
-        printf("Błąd odbioru od serwera lub nieprawidłowa odpowiedź.\n");
+        SDL_Delay(10);  // aby nie zjadało CPU
     }
 
     close(sock);
+    SDL_DestroyRenderer(ren);
+    SDL_DestroyWindow(win);
+    SDL_Quit();
     return 0;
 }
