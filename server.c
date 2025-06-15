@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <pthread.h>
-#include "creature.h"
 
 #define PORT 12345
 #define MAX_CLIENTS 10
@@ -23,32 +22,17 @@ Pair pairs[MAX_CLIENTS / 2];
 int pair_count = 0;
 pthread_mutex_t pair_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// Wysyłanie odpowiedzi do klienta: partner_choice, status
-// status: 0 = mismatch, 1 = accepted, 2 = wait
 void send_response(int sock, unsigned char partner_choice, unsigned char status) {
     unsigned char response[2] = {partner_choice, status};
     send(sock, response, 2, 0);
-}
-
-// Cycliczna aktualizacja stanu Creatury - w osobnym wątku
-void *creature_update_loop(void *arg) {
-    (void)arg;
-    while (1) {
-        pthread_mutex_lock(&creature_lock);
-        update_creature_time();
-        pthread_mutex_unlock(&creature_lock);
-        sleep(5);
-    }
-    return NULL;
 }
 
 void *handle_client(void *arg) {
     int client_sock = *(int *)arg;
     free(arg);
     Pair *assigned_pair = NULL;
-    int is_first = 0;
+    int is_first;
 
-    // Przypisz klienta do pary
     pthread_mutex_lock(&pair_mutex);
     for (int i = 0; i < pair_count; ++i) {
         if (pairs[i].client2 == -1) {
@@ -84,7 +68,7 @@ void *handle_client(void *arg) {
             break;
         }
 
-        if (button_choice > 4) continue; // ignoruj niepoprawne akcje
+        if (button_choice > 4) continue;
 
         pthread_mutex_lock(&assigned_pair->lock);
         if (is_first) {
@@ -103,7 +87,7 @@ void *handle_client(void *arg) {
             assigned_pair->has_choice2 = 1;
         }
 
-        // Obaj gracze wybrali - sprawdź czy zgodne
+        // Obaj gracze wybrali — rozstrzygamy turę
         if (assigned_pair->has_choice1 && assigned_pair->has_choice2) {
             unsigned char status = (assigned_pair->choice1 == assigned_pair->choice2) ? 1 : 0;
             unsigned char c1 = assigned_pair->choice1;
@@ -112,27 +96,22 @@ void *handle_client(void *arg) {
             int sock1 = assigned_pair->client1;
             int sock2 = assigned_pair->client2;
 
-            // Aktualizacja stanu creatury jeśli zgodne
-            if (status == 1) {
-                pthread_mutex_lock(&creature_lock);
-                update_creature_action(c1);  // obie akcje są takie same
-                pthread_mutex_unlock(&creature_lock);
-            }
-
-            pthread_mutex_unlock(&assigned_pair->lock); // odblokuj przed wysłaniem
+            pthread_mutex_unlock(&assigned_pair->lock); // przed wysłaniem (bez blokowania!)
 
             if (sock1 != -1) send_response(sock1, c2, status);
             if (sock2 != -1) send_response(sock2, c1, status);
 
-            // Reset wyborów do nowej tury
+            // Zresetuj dane tury
             pthread_mutex_lock(&assigned_pair->lock);
             assigned_pair->has_choice1 = 0;
             assigned_pair->has_choice2 = 0;
             pthread_mutex_unlock(&assigned_pair->lock);
+
         } else {
-            // Czekamy na drugiego gracza
+            // Jeden gracz już wybrał — wysyłamy info o czekaniu
             unsigned char partner_choice = 0; // nieważne
             unsigned char status = 2; // oczekiwanie
+
             pthread_mutex_unlock(&assigned_pair->lock);
             send_response(client_sock, partner_choice, status);
         }
@@ -171,14 +150,6 @@ int main() {
     }
 
     printf("Serwer nasłuchuje na porcie %d...\n", PORT);
-
-    // Inicjalizacja stanu creatury
-    init_creature();
-
-    // Start wątku cyklicznej aktualizacji creatury
-    pthread_t updater_tid;
-    pthread_create(&updater_tid, NULL, creature_update_loop, NULL);
-    pthread_detach(updater_tid);
 
     while (1) {
         struct sockaddr_in client_addr;
