@@ -15,7 +15,7 @@ client: $(CLIENT_OBJS)
 	$(CC) $(CLIENT_OBJS) $(SDL_LIBS) -o client
 
 server: $(SERVER_OBJS)
-	$(CC) $(SERVER_OBJS) -o server
+	$(CC) $(SERVER_OBJS) $(SDL_LIBS) -o server
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(SDL_CFLAGS) -c $< -o $@
