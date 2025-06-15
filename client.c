@@ -144,6 +144,26 @@ int main(int argc, char *argv[]) {
                         break;
                     case 1:
                         printf("Wynik: takie same wybory (accepted).\n");
+                        // Tu wykonujemy akcję zgodnie z wybraną opcją
+                        switch (response[0]) {
+                            case 0: // Feed
+                                printf("Fed\n");
+                                break;
+                            case 1: // Read
+                                printf("Read\n");
+                                break;
+                            case 2: // Sleep
+                                printf("Slept\n");
+                                break;
+                            case 3: // Hug
+                                printf("Hugged\n");
+                                break;
+                            case 4: // Play
+                                printf("Played\n");
+                                break;
+                            default:
+                                printf("Nieznana akcja\n");
+                        }
                         break;
                     case 2:
                         printf("Wynik: oczekiwanie na drugiego gracza.\n");
