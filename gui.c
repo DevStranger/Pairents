@@ -183,15 +183,21 @@ void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Fon
     SDL_SetRenderDrawColor(gui->renderer, 50, 50, 100, 255);
     SDL_RenderClear(gui->renderer);
 
-    // Rysujemy wskaźniki stwora
+    // Rysujemy wskaźniki stwora (paski życia, sen, miłość, itd.)
     gui_draw_creature_status(gui, creature, font_text, font_emoji);
+
+    // Rysujemy ASCII Arta
+    SDL_Color white = {255, 255, 255, 255};
+    int art_x = 550;  // Możesz dopasować, gdzie ma być ASCII ART
+    int art_y = 40;
+    draw_ascii_art(gui->renderer, font_text, creature->ascii_art, art_x, art_y, white);
 
     // Rysujemy guziki
     for (int i = 0; i < BUTTON_COUNT; ++i) {
         SDL_SetRenderDrawColor(gui->renderer, 100, 100, 255, 255);
         SDL_RenderFillRect(gui->renderer, &gui->buttons[i]);
 
-        // Rysujemy label (tekst) przycisku
+        // Rysujemy etykietę
         draw_text(gui->renderer, font_text, button_labels[i],
                   gui->buttons[i].x + 10, gui->buttons[i].y + 10, (SDL_Color){255,255,255,255});
     }
