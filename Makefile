@@ -9,23 +9,26 @@ BINDIR := bin
 SERVER_SRC := server.c creature.c
 CLIENT_SRC := client.c creature.c GUI.c
 
-# Pliki obiektowe
-SERVER_OBJ := $(OBJDIR)/server.o $(OBJDIR)/creature.o
-CLIENT_OBJ := $(OBJDIR)/client.o $(OBJDIR)/creature.o $(OBJDIR)/GUI.o
+# Pliki obiektowe (osobne wersje creature.o!)
+SERVER_OBJ := $(OBJDIR)/server.o $(OBJDIR)/creature_server.o
+CLIENT_OBJ := $(OBJDIR)/client.o $(OBJDIR)/creature_client.o $(OBJDIR)/GUI.o
 
 all: dirs server client
 
 dirs:
 	@mkdir -p $(OBJDIR) $(BINDIR)
 
-# Kompilacja plików .c do .o w objdir
+# Kompilacja plików .c do .o
 $(OBJDIR)/server.o: server.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR)/client.o: client.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJDIR)/creature.o: creature.c
+$(OBJDIR)/creature_server.o: creature.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)/creature_client.o: creature.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR)/GUI.o: GUI.c
@@ -41,3 +44,4 @@ clean:
 	rm -rf $(OBJDIR) $(BINDIR)
 
 .PHONY: all dirs clean server client
+
