@@ -13,8 +13,6 @@
 #define PORT 12345
 #define SERVER_IP "127.0.0.1"
 
-void set_temp_ascii_art(Creature *c, const char *filename, Uint32 duration_ms);
-
 int connect_to_server() {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
