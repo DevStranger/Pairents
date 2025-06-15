@@ -56,6 +56,32 @@ static void draw_ascii_art(SDL_Renderer *r, TTF_Font *font, const char *ascii_ar
     }
 }
 
+// Funkcja do wczytania ASCII art z pliku, zwraca alokowany łańcuch (należy zwolnić)
+static char* load_ascii_art_from_file(const char *filename) {
+    FILE *f = fopen(filename, "r");
+    if (!f) {
+        fprintf(stderr, "Nie można otworzyć pliku ASCII art: %s\n", filename);
+        return NULL;
+    }
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    if (size <= 0) {
+        fclose(f);
+        return NULL;
+    }
+    char *buffer = malloc(size + 1);
+    if (!buffer) {
+        fclose(f);
+        fprintf(stderr, "Brak pamięci na ASCII art\n");
+        return NULL;
+    }
+    fread(buffer, 1, size, f);
+    buffer[size] = '\0';
+    fclose(f);
+    return buffer;
+}
+
 int gui_init(GUI *gui) {
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr, "SDL Init Error: %s\n", SDL_GetError());
@@ -178,7 +204,7 @@ void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text,
     draw_text(gui->renderer, font_text, buf, base_x + 385, base_y + 5 * line_height, white);
 }
 
-void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Font *font_emoji) {
+void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Font *font_emoji, TTF_Font *font_bunny) {
     // Czyścimy ekran
     SDL_SetRenderDrawColor(gui->renderer, 50, 50, 100, 255);
     SDL_RenderClear(gui->renderer);
@@ -194,6 +220,24 @@ void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Fon
         // Rysujemy label (tekst) przycisku
         draw_text(gui->renderer, font_text, button_labels[i],
                   gui->buttons[i].x + 10, gui->buttons[i].y + 10, (SDL_Color){255,255,255,255});
+    }
+
+    // --- Rysowanie zajączka ASCII art ---
+    static char *bunny_art = NULL;
+    if (!bunny_art) {
+        bunny_art = load_ascii_art_from_file("assets/default.txt");
+        if (!bunny_art) {
+            // Jeżeli nie udało się wczytać pliku, rysujemy info
+            draw_text(gui->renderer, font_text, "ASCII art missing!", WINDOW_WIDTH - 200, 50, (SDL_Color){255, 0, 0, 255});
+        }
+    }
+    if (bunny_art) {
+        SDL_Color bunny_color = {255, 255, 255, 255};
+        // Pozycja zajączka: po prawej stronie, nad guzikami, obok wskaźników
+        // Wskaźniki mają base_x=20, szerokość tła ~450, więc rysujemy zajączka z prawej strony tego obszaru, np:
+        int bunny_x = 480;  
+        int bunny_y = 20;   // trochę od góry, nad guzikami
+        draw_ascii_art(gui->renderer, font_bunny, bunny_art, bunny_x, bunny_y, bunny_color);
     }
 
     SDL_RenderPresent(gui->renderer);
