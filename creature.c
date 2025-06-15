@@ -19,12 +19,12 @@ void init_creature(Creature *c) {
 void update_creature(Creature *c) {
     time_t now = time(NULL);
 
-    if (difftime(now, c->last_update1) >= 1) { //was 480 made it 1
+    if (difftime(now, c->last_update1) >= 480) { 
         if (c->hunger > 0) c->hunger--;
         c->last_update1 = now;
     }
 
-    if (difftime(now, c->last_update2) >= 1) { //was 900 made it 1
+    if (difftime(now, c->last_update2) >= 900) {
         if (c->happiness > 0) c->happiness--;
         if (c->love > 0 && c->growth < 30) c->love--;
         c->last_update2 = now;
