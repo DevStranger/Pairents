@@ -13,6 +13,8 @@
 #define PORT 12345
 #define SERVER_IP "127.0.0.1"
 
+void set_temp_ascii_art(Creature *c, const char *filename, Uint32 duration_ms);
+
 int connect_to_server() {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
@@ -66,18 +68,24 @@ char *load_ascii_art(const char *filename) {
         return NULL;
     }
 
-    void set_temp_ascii_art(Creature *c, const char *filename, Uint32 duration_ms) {
-        if (c->temp_ascii_art) {
-            free(c->temp_ascii_art);
-            c->temp_ascii_art = NULL;
-        }
-        c->temp_ascii_art = load_ascii_art(filename);
-        if (c->temp_ascii_art) {
-            c->temp_art_end_time = SDL_GetTicks() + duration_ms;
-        } else {
-            c->temp_art_end_time = 0;
-        }
+    fread(buffer, 1, size, file);
+    buffer[size] = '\0';
+    fclose(file);
+    return buffer;
+}
+
+void set_temp_ascii_art(Creature *c, const char *filename, Uint32 duration_ms) {
+    if (c->temp_ascii_art) {
+        free(c->temp_ascii_art);
+        c->temp_ascii_art = NULL;
     }
+    c->temp_ascii_art = load_ascii_art(filename);
+    if (c->temp_ascii_art) {
+        c->temp_art_end_time = SDL_GetTicks() + duration_ms;
+    } else {
+        c->temp_art_end_time = 0;
+    }
+}
 
     fread(buffer, 1, size, file);
     buffer[size] = '\0';
