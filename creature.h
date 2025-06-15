@@ -28,6 +28,6 @@ void init_creature(Creature *c);
 void update_creature(Creature *c);
 
 // Funkcja ustawiająca tymczasowy ASCII art na określony czas
-void set_temp_ascii_art(Creature *c, const char *filename, Uint32 duration_ms);
+void set_temp_ascii_art(Creature *c, char *new_art, Uint32 duration_ms);
 
 #endif // CREATURE_H
