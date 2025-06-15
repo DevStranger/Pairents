@@ -62,13 +62,13 @@ int main(int argc, char *argv[]) {
     }
 
     // Załaduj fonty (dostosuj ścieżkę i rozmiar fontów)
-    TTF_Font *font_text = TTF_OpenFont("fonts/OpenSans-Regular.ttf", 20);
+    TTF_Font *font_text = TTF_OpenFont("assets/MatrixtypeDisplayBold-6R4e6.ttf", 20);
     if (!font_text) {
         fprintf(stderr, "TTF_OpenFont font_text failed: %s\n", TTF_GetError());
         gui_destroy(&gui);
         return 1;
     }
-    TTF_Font *font_emoji = TTF_OpenFont("fonts/OpenSansEmoji.ttf", 24);
+    TTF_Font *font_emoji = TTF_OpenFont("assets/NotoEmoji-VariableFont_wght.ttf", 24);
     if (!font_emoji) {
         fprintf(stderr, "TTF_OpenFont font_emoji failed: %s\n", TTF_GetError());
         TTF_CloseFont(font_text);
