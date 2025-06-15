@@ -66,6 +66,19 @@ char *load_ascii_art(const char *filename) {
         return NULL;
     }
 
+    void set_temp_ascii_art(Creature *c, const char *filename, Uint32 duration_ms) {
+        if (c->temp_ascii_art) {
+            free(c->temp_ascii_art);
+            c->temp_ascii_art = NULL;
+        }
+        c->temp_ascii_art = load_ascii_art(filename);
+        if (c->temp_ascii_art) {
+            c->temp_art_end_time = SDL_GetTicks() + duration_ms;
+        } else {
+            c->temp_art_end_time = 0;
+        }
+    }
+
     fread(buffer, 1, size, file);
     buffer[size] = '\0';
     fclose(file);
@@ -187,14 +200,19 @@ int main(int argc, char *argv[]) {
                         break;
                     case 1:
                         printf("Wynik: takie same wybory (accepted).\n");
-                        switch (partner_choice) {
-                            case 0: printf("Fed\n"); break;
-                            case 1: printf("Read\n"); break;
-                            case 2: printf("Slept\n"); break;
-                            case 3: printf("Hugged\n"); break;
-                            case 4: printf("Played\n"); break;
-                            default: printf("Nieznana akcja\n");
+                        const char *action_ascii_files[] = {
+                            "assets/fed.txt",
+                            "assets/read.txt",
+                            "assets/slept.txt",
+                            "assets/hugged.txt",
+                            "assets/played.txt"
+                        };
+                        
+                        if (partner_choice <= 4) {
+                            printf("Akcja: %s\n", action_ascii_files[partner_choice]);
+                            set_temp_ascii_art(&creature, action_ascii_files[partner_choice], 8000); // 8 sekund
                         }
+
                         // Odbierz stan stwora od serwera
                         {
                             Creature new_creature;
