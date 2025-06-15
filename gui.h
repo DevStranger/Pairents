@@ -6,7 +6,7 @@
 #include "creature.h"
 
 #define WINDOW_WIDTH  800
-#define WINDOW_HEIGHT 600
+#define WINDOW_HEIGHT 500
 
 #define BUTTON_COUNT 5
 #define BUTTON_WIDTH  100
