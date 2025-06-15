@@ -22,7 +22,6 @@ typedef struct {
 Pair pairs[MAX_CLIENTS / 2];
 int pair_count = 0;
 pthread_mutex_t pair_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t creature_lock = PTHREAD_MUTEX_INITIALIZER;
 
 // Wysyłanie odpowiedzi do klienta: partner_choice, status
 // status: 0 = mismatch, 1 = accepted, 2 = wait
