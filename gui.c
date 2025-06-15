@@ -4,6 +4,7 @@
 #include <string.h>
 #include <SDL2/SDL_ttf.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 const char *button_labels[BUTTON_COUNT] = { "Feed", "Read", "Sleep", "Hug", "Play" };
 
