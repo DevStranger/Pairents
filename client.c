@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Poprawne wywołanie gui_draw_buttons z argumentami
+    update_creature(&creature);
     gui_draw_buttons(&gui, &creature, font_text, font_emoji);
 
     int running = 1;
