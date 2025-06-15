@@ -85,7 +85,6 @@ void set_temp_ascii_art(Creature *c, const char *filename, Uint32 duration_ms) {
     } else {
         c->temp_art_end_time = 0;
     }
-}
 
     fread(buffer, 1, size, file);
     buffer[size] = '\0';
