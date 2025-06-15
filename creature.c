@@ -46,10 +46,9 @@ void update_creature(Creature *c) {
     }
 }
 
-void set_temp_ascii_art(Creature *c, const char *filename, Uint32 duration_ms) {
-    char *new_art = load_ascii_art(filename);
+void set_temp_ascii_art(Creature *c, char *new_art, Uint32 duration_ms) {
     if (!new_art) {
-        fprintf(stderr, "Nie udało się załadować ASCII art z %s\n", filename);
+        fprintf(stderr, "set_temp_ascii_art: nie podano ASCII artu\n");
         return;
     }
 
