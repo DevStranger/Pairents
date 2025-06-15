@@ -3,8 +3,31 @@
 #include <stdio.h>
 #include <string.h>
 #include <SDL2/SDL_ttf.h>
+#include <stdlib.h>
 
 const char *button_labels[BUTTON_COUNT] = { "Feed", "Read", "Sleep", "Hug", "Play" };
+
+// Wczytaj cały plik tekstowy do dynamicznego bufora (zwraca NULL w razie błędu)
+char *load_ascii_art(const char *filename) {
+    FILE *f = fopen(filename, "r");
+    if (!f) {
+        fprintf(stderr, "Nie można otworzyć pliku %s\n", filename);
+        return NULL;
+    }
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    char *buffer = malloc(size + 1);
+    if (!buffer) {
+        fclose(f);
+        fprintf(stderr, "Brak pamięci na wczytanie ASCII art\n");
+        return NULL;
+    }
+    fread(buffer, 1, size, f);
+    buffer[size] = '\0';
+    fclose(f);
+    return buffer;
+}
 
 static void draw_bar(SDL_Renderer *r, int x, int y, int w, int h, int value, SDL_Color color) {
     SDL_Rect bg = {x, y, w, h};
@@ -87,15 +110,10 @@ int gui_init(GUI *gui) {
         return -1;
     }
 
-    // Parametry układu
-    int margin = 20;              // margines z lewej i prawej
-    int spacing = 10;             // odstęp między guzikami
+    int margin = 20;
+    int spacing = 10;
     int available_width = WINDOW_WIDTH - 2 * margin;
-
-    // Dynamiczne obliczenie szerokości guzika
     int button_width = (available_width - spacing * (BUTTON_COUNT - 1)) / BUTTON_COUNT;
-
-    // Obliczamy start_x, by całość była wyśrodkowana
     int total_buttons_width = button_width * BUTTON_COUNT + spacing * (BUTTON_COUNT - 1);
     int start_x = (WINDOW_WIDTH - total_buttons_width) / 2;
 
@@ -178,7 +196,7 @@ void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text,
     draw_text(gui->renderer, font_text, buf, base_x + 385, base_y + 5 * line_height, white);
 }
 
-void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Font *font_emoji) {
+void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Font *font_emoji, TTF_Font *font_bunny, const char *bunny_ascii) {
     // Czyścimy ekran
     SDL_SetRenderDrawColor(gui->renderer, 50, 50, 100, 255);
     SDL_RenderClear(gui->renderer);
@@ -191,10 +209,17 @@ void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Fon
         SDL_SetRenderDrawColor(gui->renderer, 100, 100, 255, 255);
         SDL_RenderFillRect(gui->renderer, &gui->buttons[i]);
 
-        // Rysujemy label (tekst) przycisku
         draw_text(gui->renderer, font_text, button_labels[i],
                   gui->buttons[i].x + 10, gui->buttons[i].y + 10, (SDL_Color){255,255,255,255});
     }
+
+    // Rysujemy zająca ASCII art po prawej stronie nad guzikami obok wskaźników
+    // Ustaw pozycję (x,y) zajaca np.:
+    int bunny_x = WINDOW_WIDTH - 200;  // dostosuj wg szerokości okna i potrzeb
+    int bunny_y = WINDOW_HEIGHT - BUTTON_HEIGHT - 20 - 150; // nad guzikami (od góry od guzików)
+
+    SDL_Color white = {255, 255, 255, 255};
+    draw_ascii_art(gui->renderer, font_bunny, bunny_ascii, bunny_x, bunny_y, white);
 
     SDL_RenderPresent(gui->renderer);
 }
