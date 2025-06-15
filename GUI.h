@@ -3,11 +3,15 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include "creature.h"
 
 #define BUTTON_COUNT 5
 
 // Inicjalizacja SDL i czcionek
 int GUI_Init(void);
+
+// Renderer
+void GUI_render(SDL_Renderer *renderer, const creature_t *creature);
 
 // Tworzy okno z tytułem
 int GUI_CreateWindow(const char *title);
