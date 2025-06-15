@@ -25,10 +25,10 @@ int gui_init(GUI *gui);
 void gui_destroy(GUI *gui);
 
 // Rysowanie pasków postępu (hunger, happiness itd.) dla stworzenia
-void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text);
+void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text, );
 
 // Rysowanie całego GUI: tła, pasków i przycisków
-void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Font *font_emoji, TTF_Font *font_bunny, char *bunny_ascii);
+void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Font *font_emoji);
 
 // Sprawdzenie, czy kliknięcie (x,y) wpadło na któryś z przycisków
 // Zwraca indeks przycisku (0..BUTTON_COUNT-1) lub -1, jeśli poza przyciskami
