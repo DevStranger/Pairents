@@ -81,6 +81,15 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    // Asynchroniczna aktualizacja stanu stwora
+    typedef struct {
+    char buffer[sizeof(Creature)];
+    size_t received;
+    int receiving_creature; // flaga czy jesteśmy w trakcie odbierania stwora
+    } ReceiveState;
+
+    ReceiveState recv_state = { .received = 0, .receiving_creature = 0 };
+
     if (TTF_Init() == -1) {
         fprintf(stderr, "TTF_Init Error: %s\n", TTF_GetError());
         gui_destroy(&gui);
@@ -143,75 +152,62 @@ int main(int argc, char *argv[]) {
 
         if (waiting_for_response) {
             unsigned char response[2];
-            ssize_t received = recv(sock, response, 2, 0);
-            if (received == 2) {
-                unsigned char partner_choice = response[0];
-                unsigned char status = response[1];
-        
-                switch (status) {
-                    case 0:
-                        printf("Wynik: różne wybory (mismatch).\n");
-                        break;
-                    case 1:
-                        printf("Wynik: takie same wybory (accepted).\n");
-                        switch (partner_choice) {
-                            case 0: printf("Fed\n"); break;
-                            case 1: printf("Read\n"); break;
-                            case 2: printf("Slept\n"); break;
-                            case 3: printf("Hugged\n"); break;
-                            case 4: printf("Played\n"); break;
-                            default: printf("Nieznana akcja\n");
-                        }
-                        // Odbierz stan stwora od serwera
-                        {
-                            Creature new_creature;
-                            ssize_t creature_received = 0;
-                            char *ptr = (char *)&new_creature;
-                            size_t to_receive = sizeof(Creature);
-        
-                            // Blokujący odbiór całej struktury (możesz rozważyć timeout lub inny sposób)
-                            while (to_receive > 0) {
-                                ssize_t r = recv(sock, ptr + creature_received, to_receive, 0);
-                                if (r <= 0) {
-                                    if (r == 0) {
-                                        printf("Serwer zamknął połączenie podczas odbierania stwora.\n");
-                                        running = 0;
-                                        break;
-                                    }
-                                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                                        // Nie ma jeszcze danych, kontynuuj pętlę
-                                        SDL_Delay(1);
-                                        continue;
-                                    }
-                                    perror("recv stwora");
-                                    running = 0;
-                                    break;
-                                }
-                                creature_received += r;
-                                to_receive -= r;
-                            }
-                            if (running) {
-                                creature = new_creature;
-                            }
-                        }
-                        break;
-                    case 2:
-                        printf("Wynik: oczekiwanie na drugiego gracza.\n");
-                        break;
-                    default:
-                        printf("Nieznany status.\n");
+            if (!recv_state.receiving_creature) {
+                ssize_t received = recv(sock, response, 2, 0);
+                if (received == 2) {
+                    unsigned char partner_choice = response[0];
+                    unsigned char status = response[1];
+            
+                    switch (status) {
+                        case 0:
+                            printf("Wynik: różne wybory (mismatch).\n");
+                            waiting_for_response = 0;
+                            break;
+                        case 1:
+                            printf("Wynik: takie same wybory (accepted).\n");
+                            // Włącz tryb odbioru stwora
+                            recv_state.receiving_creature = 1;
+                            recv_state.received = 0;
+                            break;
+                        case 2:
+                            printf("Wynik: oczekiwanie na drugiego gracza.\n");
+                            waiting_for_response = 0;
+                            break;
+                        default:
+                            printf("Nieznany status.\n");
+                            waiting_for_response = 0;
+                    }
+                } else if (received == 0) {
+                    printf("Serwer zamknął połączenie.\n");
+                    running = 0;
+                } else if (received == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+                    // brak danych - nic nie rób
+                } else {
+                    perror("recv");
+                    running = 0;
                 }
-                waiting_for_response = 0;
-            } else if (received == 0) {
-                printf("Serwer zamknął połączenie.\n");
-                running = 0;
-            } else if (received == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-                // brak danych, nic nie rób
             } else {
-                perror("recv");
-                running = 0;
+                // Odbieramy Creature kawałek po kawałku
+                ssize_t r = recv(sock, recv_state.buffer + recv_state.received, sizeof(Creature) - recv_state.received, 0);
+                if (r > 0) {
+                    recv_state.received += r;
+                    if (recv_state.received == sizeof(Creature)) {
+                        // Pełny stan stwora odebrany
+                        memcpy(&creature, recv_state.buffer, sizeof(Creature));
+                        recv_state.receiving_creature = 0;
+                        waiting_for_response = 0;
+                        printf("Stan stwora zaktualizowany.\n");
+                    }
+                } else if (r == 0) {
+                    printf("Serwer zamknął połączenie podczas odbioru stwora.\n");
+                    running = 0;
+                } else if (r == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+                    // brak danych - nic nie rób
+                } else {
+                    perror("recv Creature");
+                    running = 0;
+                }
             }
-        }
         
         // Aktualizuj stan stwora co iterację
         update_creature(&creature);
