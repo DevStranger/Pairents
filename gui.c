@@ -68,6 +68,19 @@ int gui_init(GUI *gui) {
         return -1;
     }
 
+    gui->font_text = TTF_OpenFont("assets/SomeRegularFont.ttf", 12);
+    if (!gui->font_text) {
+        fprintf(stderr, "TTF_OpenFont font_text failed: %s\n", TTF_GetError());
+        return -1;
+    }
+
+    gui->font_ascii_art = TTF_OpenFont("assets/MatrixtypeDisplayBold-6R4e6.ttf", 6);
+    if (!gui->font_ascii_art) {
+        fprintf(stderr, "TTF_OpenFont font_ascii_art failed: %s\n", TTF_GetError());
+        TTF_CloseFont(gui->font_text);
+        return -1;
+    }
+
     gui->window = SDL_CreateWindow("Wybierz akcję",
                                    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                    WINDOW_WIDTH, WINDOW_HEIGHT, 0);
@@ -110,6 +123,8 @@ int gui_init(GUI *gui) {
 }
 
 void gui_destroy(GUI *gui) {
+    if (gui->font_ascii_art) TTF_CloseFont(gui->font_ascii_art);
+    if (gui->font_text) TTF_CloseFont(gui->font_text);
     if (gui->renderer) SDL_DestroyRenderer(gui->renderer);
     if (gui->window) SDL_DestroyWindow(gui->window);
     TTF_Quit();
@@ -190,7 +205,7 @@ void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Fon
     SDL_Color white = {255, 255, 255, 255};
     int art_x = 120;  
     int art_y = 80;
-    draw_ascii_art(gui->renderer, font_text, creature->ascii_art, art_x, art_y, white);
+    draw_ascii_art(gui->renderer, gui->font_ascii_art, creature->ascii_art, art_x, art_y, white);
 
     // Rysujemy guziki
     for (int i = 0; i < BUTTON_COUNT; ++i) {
