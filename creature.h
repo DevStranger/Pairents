@@ -2,6 +2,7 @@
 #define CREATURE_H
 
 #include <time.h>
+#include <pthread.h>  // dodajemy, bo deklarujemy mutex
 
 // Struktura stanu stworzenia
 typedef struct {
@@ -19,8 +20,11 @@ typedef struct {
     time_t last_update4;
 } Creature;
 
-// Globalna instancja stworzenia
+// Globalna instancja stworzenia (deklaracja)
 extern Creature current_creature;
+
+// Mutex do synchronizacji dostępu do stworzenia (deklaracja)
+extern pthread_mutex_t creature_lock;
 
 // Inicjalizacja stworzenia (ustawia wartości początkowe i timery)
 void init_creature(void);
