@@ -16,6 +16,8 @@ typedef struct {
     time_t last_update2;
     time_t last_update3;
     time_t last_update4;
+
+    const char *ascii_art;
 } Creature;
 
 void init_creature(Creature *c);
