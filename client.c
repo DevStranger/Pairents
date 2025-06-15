@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <arpa/inet.h>
 #include <SDL2/SDL.h>
 
@@ -29,6 +31,19 @@ int connect_to_server() {
 
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
         perror("connect");
+        close(sock);
+        return -1;
+    }
+
+    // Ustaw socket w tryb nieblokujący
+    int flags = fcntl(sock, F_GETFL, 0);
+    if (flags == -1) {
+        perror("fcntl get");
+        close(sock);
+        return -1;
+    }
+    if (fcntl(sock, F_SETFL, flags | O_NONBLOCK) == -1) {
+        perror("fcntl set");
         close(sock);
         return -1;
     }
@@ -104,7 +119,6 @@ int main(int argc, char *argv[]) {
                     if (mx >= buttons[i].x && mx <= buttons[i].x + buttons[i].w &&
                         my >= buttons[i].y && my <= buttons[i].y + buttons[i].h) {
 
-                        // Wysłanie wyboru do serwera
                         unsigned char choice = (unsigned char)i;
                         if (send(sock, &choice, 1, 0) != 1) {
                             perror("send");
@@ -113,44 +127,50 @@ int main(int argc, char *argv[]) {
                         }
 
                         waiting_for_response = 1;
-
-                        // Odbieranie odpowiedzi
-                        unsigned char response[2];
-                        ssize_t received = recv(sock, response, 2, 0);
-                        if (received == 2 && response[0] < 5 && response[1] <= 2) {
-                            printf("Partner wybrał: %s\n", button_labels[response[0]]);
-                            switch (response[1]) {
-                                case 0:
-                                    printf("Wynik: różne wybory (mismatch).\n");
-                                    break;
-                                case 1:
-                                    printf("Wynik: takie same wybory (accepted).\n");
-                                    break;
-                                case 2:
-                                    printf("Wynik: oczekiwanie na drugiego gracza.\n");
-                                    break;
-                                default:
-                                    printf("Nieznany status.\n");
-                            }
-                        } else {
-                            printf("Błąd odbioru od serwera lub nieprawidłowa odpowiedź.\n");
-                            running = 0;
-                        }
-
-                        waiting_for_response = 0;
-                        draw_buttons(ren, buttons);
                         break;
                     }
                 }
             }
         }
 
-        SDL_Delay(10);  // aby nie zjadało CPU
+        if (waiting_for_response) {
+            unsigned char response[2];
+            ssize_t received = recv(sock, response, 2, 0);
+            if (received == 2) {
+                printf("Partner wybrał: %s\n", button_labels[response[0]]);
+                switch (response[1]) {
+                    case 0:
+                        printf("Wynik: różne wybory (mismatch).\n");
+                        break;
+                    case 1:
+                        printf("Wynik: takie same wybory (accepted).\n");
+                        break;
+                    case 2:
+                        printf("Wynik: oczekiwanie na drugiego gracza.\n");
+                        break;
+                    default:
+                        printf("Nieznany status.\n");
+                }
+                waiting_for_response = 0;
+                draw_buttons(ren, buttons);
+            } else if (received == 0) {
+                printf("Serwer zamknął połączenie.\n");
+                running = 0;
+            } else if (received == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+                // brak danych, nic nie rób
+            } else {
+                perror("recv");
+                running = 0;
+            }
+        }
+
+        SDL_Delay(10);  // mały delay, żeby nie zjadało CPU
     }
 
     close(sock);
     SDL_DestroyRenderer(ren);
     SDL_DestroyWindow(win);
     SDL_Quit();
+
     return 0;
 }
