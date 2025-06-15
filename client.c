@@ -55,8 +55,8 @@ void apply_action(Creature *c, unsigned char action) {
             if (c->hunger > 100) c->hunger = 100;
             break;
         case 1: // Read
-            c->happiness += 10;
-            if (c->happiness > 100) c->happiness = 100;
+            c->growth += 10;
+            if (c->growth > 100) c->growth = 100;
             break;
         case 2: // Slept
             c->sleep += 20;
@@ -67,10 +67,8 @@ void apply_action(Creature *c, unsigned char action) {
             if (c->love > 100) c->love = 100;
             break;
         case 4: // Played
-            c->happiness += 20;
+            c->happiness += 15;
             if (c->happiness > 100) c->happiness = 100;
-            c->growth += 5;
-            if (c->growth > 100) c->growth = 100;
             break;
         default:
             break;
