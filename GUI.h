@@ -15,11 +15,10 @@ int GUI_init(SDL_Renderer *renderer);
 void GUI_cleanup(void);
 
 // Renderuje GUI: statystyki stworzenia, ASCII art oraz przyciski
-void GUI_render(SDL_Renderer *renderer, const creature_t *creature);
+void GUI_render(SDL_Renderer *renderer, const creature *creature);
 
 // Sprawdza, czy kliknięcie (x, y) mieści się w którymś z przycisków
 // Zwraca indeks przycisku lub -1, jeśli poza przyciskami
 int GUI_check_button_click(int x, int y);
 
 #endif // GUI_H
-
