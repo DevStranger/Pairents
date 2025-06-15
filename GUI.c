@@ -125,7 +125,7 @@ static void draw_buttons(SDL_Renderer *renderer, TTF_Font *font_regular, TTF_Fon
 // Funkcje API zgodne z GUI.h
 // ==========================================
 
-int gui_init(SDL_Renderer *renderer) {
+int GUI_init(SDL_Renderer *renderer) {
     font_text  = TTF_OpenFont("client/assets/fonts/MatrixtypeDisplayBold-6R4e6.ttf", 14);
     font_emoji = TTF_OpenFont("client/assets/fonts/NotoEmoji-VariableFont_wght.ttf", 18);
     font_bunny = TTF_OpenFont("client/assets/fonts/MatrixtypeDisplayBold-6R4e6.ttf", 6);
@@ -143,7 +143,7 @@ int gui_init(SDL_Renderer *renderer) {
     return 1;
 }
 
-void gui_cleanup(void) {
+void GUI_cleanup(void) {
     free(bunny_art);
     bunny_art = NULL;
 
@@ -161,7 +161,7 @@ void gui_cleanup(void) {
     }
 }
 
-void gui_render(SDL_Renderer *renderer, const creature_t *creature) {
+void GUI_render(SDL_Renderer *renderer, const creature_t *creature) {
     SDL_Color white  = {255, 255, 255, 255};
     SDL_Color green  = {0, 200, 0, 255};
     SDL_Color blue   = {0, 100, 255, 255};
@@ -224,7 +224,7 @@ void gui_render(SDL_Renderer *renderer, const creature_t *creature) {
     draw_buttons(renderer, font_text, font_emoji, white);
 }
 
-int gui_check_button_click(int x, int y) {
+int GUI_check_button_click(int x, int y) {
     Uint32 now = SDL_GetTicks();
     for (int i = 0; i < BUTTON_COUNT; i++) {
         if (x >= buttons[i].x && x <= buttons[i].x + buttons[i].w &&
