@@ -54,14 +54,12 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Inicjalizacja TTF i wczytanie fontów
     if (TTF_Init() == -1) {
         fprintf(stderr, "TTF_Init Error: %s\n", TTF_GetError());
         gui_destroy(&gui);
         return 1;
     }
 
-    // Załaduj fonty (dostosuj ścieżkę i rozmiar fontów)
     TTF_Font *font_text = TTF_OpenFont("assets/MatrixtypeDisplayBold-6R4e6.ttf", 20);
     if (!font_text) {
         fprintf(stderr, "TTF_OpenFont font_text failed: %s\n", TTF_GetError());
@@ -76,7 +74,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Stwórz przykładowego stwora (na początek)
     Creature creature = {
         .hunger = 70,
         .happiness = 80,
@@ -93,9 +90,6 @@ int main(int argc, char *argv[]) {
         gui_destroy(&gui);
         return 1;
     }
-
-    update_creature(&creature);
-    gui_draw_buttons(&gui, &creature, font_text, font_emoji);
 
     int running = 1;
     int waiting_for_response = 0;
@@ -146,9 +140,6 @@ int main(int argc, char *argv[]) {
                         printf("Nieznany status.\n");
                 }
                 waiting_for_response = 0;
-
-                // Odśwież GUI po odpowiedzi
-                gui_draw_buttons(&gui, &creature, font_text, font_emoji);
             } else if (received == 0) {
                 printf("Serwer zamknął połączenie.\n");
                 running = 0;
@@ -160,12 +151,23 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        SDL_Delay(10);
+        // Aktualizuj stan stwora co iterację
+        update_creature(&creature);
+
+        // Czyść ekran (tutaj zakładam, że gui.renderer jest SDL_Renderer)
+        SDL_SetRenderDrawColor(gui.renderer, 0, 0, 0, 255); // czarny
+        SDL_RenderClear(gui.renderer);
+
+        // Rysuj GUI z aktualnym stanem
+        gui_draw_buttons(&gui, &creature, font_text, font_emoji);
+
+        // Wyświetl nowy frame
+        SDL_RenderPresent(gui.renderer);
+
+        SDL_Delay(16); // ok. 60 FPS
     }
 
     close(sock);
-
-    // Posprzątaj fonty i SDL
     TTF_CloseFont(font_text);
     TTF_CloseFont(font_emoji);
     gui_destroy(&gui);
