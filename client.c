@@ -48,6 +48,35 @@ int connect_to_server() {
     return sock;
 }
 
+void apply_action(Creature *c, unsigned char action) {
+    switch (action) {
+        case 0: // Fed
+            c->hunger += 15;
+            if (c->hunger > 100) c->hunger = 100;
+            break;
+        case 1: // Read
+            c->happiness += 10;
+            if (c->happiness > 100) c->happiness = 100;
+            break;
+        case 2: // Slept
+            c->sleep += 20;
+            if (c->sleep > 100) c->sleep = 100;
+            break;
+        case 3: // Hugged
+            c->love += 15;
+            if (c->love > 100) c->love = 100;
+            break;
+        case 4: // Played
+            c->happiness += 20;
+            if (c->happiness > 100) c->happiness = 100;
+            c->growth += 5;
+            if (c->growth > 100) c->growth = 100;
+            break;
+        default:
+            break;
+    }
+}
+
 int main(int argc, char *argv[]) {
     GUI gui;
     if (gui_init(&gui) != 0) {
@@ -132,6 +161,8 @@ int main(int argc, char *argv[]) {
                             case 4: printf("Played\n"); break;
                             default: printf("Nieznana akcja\n");
                         }
+                        // Tutaj aktualizujemy stan stwora:
+                        apply_action(&creature, response[0]);
                         break;
                     case 2:
                         printf("Wynik: oczekiwanie na drugiego gracza.\n");
