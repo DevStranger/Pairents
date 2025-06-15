@@ -6,11 +6,11 @@ OBJDIR := obj
 BINDIR := bin
 
 # Pliki źródłowe
-SERVER_SRC := server.c
+SERVER_SRC := server.c creature.c
 CLIENT_SRC := client.c creature.c GUI.c
 
 # Pliki obiektowe
-SERVER_OBJ := $(OBJDIR)/server.o
+SERVER_OBJ := $(OBJDIR)/server.o $(OBJDIR)/creature.o
 CLIENT_OBJ := $(OBJDIR)/client.o $(OBJDIR)/creature.o $(OBJDIR)/GUI.o
 
 all: dirs server client
