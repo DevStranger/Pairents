@@ -29,6 +29,9 @@ char *load_ascii_art(char *filename) {
     return buffer;
 }
 
+// GLOBALNA zmienna na ASCII art zajęcia — modyfikowalna, bez const
+static char *bunny_ascii = NULL;
+
 static void draw_bar(SDL_Renderer *r, int x, int y, int w, int h, int value, SDL_Color color) {
     SDL_Rect bg = {x, y, w, h};
     SDL_SetRenderDrawColor(r, 50, 50, 50, 255);
@@ -124,10 +127,22 @@ int gui_init(GUI *gui) {
         gui->buttons[i].h = BUTTON_HEIGHT;
     }
 
+    // Wczytaj bunny_ascii z pliku przy inicjalizacji (raz)
+    bunny_ascii = load_ascii_art("bunny.txt");
+    if (!bunny_ascii) {
+        fprintf(stderr, "Nie udało się wczytać ASCII art zajęcia!\n");
+        // możesz tu chcieć zwolnić zasoby i wyjść
+        return -1;
+    }
+
     return 0;
 }
 
 void gui_destroy(GUI *gui) {
+    if (bunny_ascii) {
+        free(bunny_ascii);
+        bunny_ascii = NULL;
+    }
     if (gui->renderer) SDL_DestroyRenderer(gui->renderer);
     if (gui->window) SDL_DestroyWindow(gui->window);
     TTF_Quit();
@@ -174,62 +189,56 @@ void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text,
     sprintf(buf, "%d%%", creature->sleep);
     draw_text(gui->renderer, font_text, buf, base_x + 385, base_y + 2 * line_height, white);
 
-    // Health
-    draw_text(gui->renderer, font_emoji, "💊", base_x, base_y + 3 * line_height, white);
-    draw_text(gui->renderer, font_text, "Health", base_x + 40, base_y + 3 * line_height, white);
-    draw_bar(gui->renderer, base_x + 170, base_y + 3 * line_height + 4, 200, 20, creature->health, red);
-    sprintf(buf, "%d%%", creature->health);
+    // Read
+    draw_text(gui->renderer, font_emoji, "📚", base_x, base_y + 3 * line_height, white);
+    draw_text(gui->renderer, font_text, "Read", base_x + 40, base_y + 3 * line_height, white);
+    draw_bar(gui->renderer, base_x + 170, base_y + 3 * line_height + 4, 200, 20, creature->read, pink);
+    sprintf(buf, "%d%%", creature->read);
     draw_text(gui->renderer, font_text, buf, base_x + 385, base_y + 3 * line_height, white);
 
-    // Growth
-    draw_text(gui->renderer, font_emoji, "🌱", base_x, base_y + 4 * line_height, white);
-    draw_text(gui->renderer, font_text, "Growth", base_x + 40, base_y + 4 * line_height, white);
-    draw_bar(gui->renderer, base_x + 170, base_y + 4 * line_height + 4, 200, 20, creature->growth, pink);
-    sprintf(buf, "%d%%", creature->growth);
+    // Hug
+    draw_text(gui->renderer, font_emoji, "🤗", base_x, base_y + 4 * line_height, white);
+    draw_text(gui->renderer, font_text, "Hug", base_x + 40, base_y + 4 * line_height, white);
+    draw_bar(gui->renderer, base_x + 170, base_y + 4 * line_height + 4, 200, 20, creature->hug, orange);
+    sprintf(buf, "%d%%", creature->hug);
     draw_text(gui->renderer, font_text, buf, base_x + 385, base_y + 4 * line_height, white);
-
-    // Love
-    draw_text(gui->renderer, font_emoji, "❤️", base_x, base_y + 5 * line_height, white);
-    draw_text(gui->renderer, font_text, "Love", base_x + 40, base_y + 5 * line_height, white);
-    draw_bar(gui->renderer, base_x + 170, base_y + 5 * line_height + 4, 200, 20, creature->love, orange);
-    sprintf(buf, "%d%%", creature->love);
-    draw_text(gui->renderer, font_text, buf, base_x + 385, base_y + 5 * line_height, white);
 }
 
-void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Font *font_emoji, TTF_Font *font_bunny, const char *bunny_ascii) {
-    // Czyścimy ekran
-    SDL_SetRenderDrawColor(gui->renderer, 50, 50, 100, 255);
-    SDL_RenderClear(gui->renderer);
+void gui_draw_buttons(GUI *gui, TTF_Font *font) {
+    SDL_Color button_bg = {70, 70, 70, 255};
+    SDL_Color button_fg = {200, 200, 200, 255};
+    SDL_Color button_border = {255, 255, 255, 255};
 
-    // Rysujemy wskaźniki stwora
-    gui_draw_creature_status(gui, creature, font_text, font_emoji);
-
-    // Rysujemy guziki
     for (int i = 0; i < BUTTON_COUNT; ++i) {
-        SDL_SetRenderDrawColor(gui->renderer, 100, 100, 255, 255);
-        SDL_RenderFillRect(gui->renderer, &gui->buttons[i]);
-
-        draw_text(gui->renderer, font_text, button_labels[i],
-                  gui->buttons[i].x + 10, gui->buttons[i].y + 10, (SDL_Color){255,255,255,255});
+        SDL_Rect r = { gui->buttons[i].x, gui->buttons[i].y, gui->buttons[i].w, gui->buttons[i].h };
+        // Tło
+        SDL_SetRenderDrawColor(gui->renderer, button_bg.r, button_bg.g, button_bg.b, button_bg.a);
+        SDL_RenderFillRect(gui->renderer, &r);
+        // Obramowanie
+        SDL_SetRenderDrawColor(gui->renderer, button_border.r, button_border.g, button_border.b, button_border.a);
+        SDL_RenderDrawRect(gui->renderer, &r);
+        // Tekst
+        int text_w, text_h;
+        TTF_SizeUTF8(font, button_labels[i], &text_w, &text_h);
+        int text_x = gui->buttons[i].x + (gui->buttons[i].w - text_w) / 2;
+        int text_y = gui->buttons[i].y + (gui->buttons[i].h - text_h) / 2;
+        draw_text(gui->renderer, font, (char *)button_labels[i], text_x, text_y, button_fg);
     }
 
-    // Rysujemy zająca ASCII art po prawej stronie nad guzikami obok wskaźników
-    int bunny_x = WINDOW_WIDTH - 200; 
-    int bunny_y = WINDOW_HEIGHT - BUTTON_HEIGHT - 20 - 150; // nad guzikami (od góry od guzików)
-
-    SDL_Color white = {255, 255, 255, 255};
-    draw_ascii_art(gui->renderer, font_bunny, bunny_ascii, bunny_x, bunny_y, white);
-
-    SDL_RenderPresent(gui->renderer);
+    // Rysuj ASCII art zajęcia
+    if (bunny_ascii) {
+        draw_ascii_art(gui->renderer, font, bunny_ascii, 30, 380, button_fg);
+    }
 }
 
-int gui_check_button_click(GUI *gui, int x, int y) {
+bool gui_is_button_clicked(GUI *gui, int x, int y, int *out_button_index) {
     for (int i = 0; i < BUTTON_COUNT; ++i) {
-        SDL_Rect *btn = &gui->buttons[i];
-        if (x >= btn->x && x <= btn->x + btn->w &&
-            y >= btn->y && y <= btn->y + btn->h) {
-            return i;
+        SDL_Rect r = gui->buttons[i];
+        if (x >= r.x && x <= r.x + r.w &&
+            y >= r.y && y <= r.y + r.h) {
+            if (out_button_index) *out_button_index = i;
+            return true;
         }
     }
-    return -1;
+    return false;
 }
