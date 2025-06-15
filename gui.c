@@ -8,7 +8,7 @@
 const char *button_labels[BUTTON_COUNT] = { "Feed", "Read", "Sleep", "Hug", "Play" };
 
 // Wczytaj cały plik tekstowy do dynamicznego bufora (zwraca NULL w razie błędu)
-char *load_ascii_art(const char *filename) {
+char *load_ascii_art(char *filename) {
     FILE *f = fopen(filename, "r");
     if (!f) {
         fprintf(stderr, "Nie można otworzyć pliku %s\n", filename);
@@ -39,7 +39,7 @@ static void draw_bar(SDL_Renderer *r, int x, int y, int w, int h, int value, SDL
     SDL_RenderFillRect(r, &fg);
 }
 
-static void draw_text(SDL_Renderer *r, TTF_Font *font, const char *text, int x, int y, SDL_Color color) {
+static void draw_text(SDL_Renderer *r, TTF_Font *font, char *text, int x, int y, SDL_Color color) {
     SDL_Surface *surface = TTF_RenderUTF8_Blended(font, text, color);
     if (!surface) {
         fprintf(stderr, "TTF_RenderUTF8_Blended failed: %s\n", TTF_GetError());
@@ -57,7 +57,7 @@ static void draw_text(SDL_Renderer *r, TTF_Font *font, const char *text, int x, 
     SDL_DestroyTexture(texture);
 }
 
-static void draw_ascii_art(SDL_Renderer *r, TTF_Font *font, const char *ascii_art, int x, int y, SDL_Color color) {
+static void draw_ascii_art(SDL_Renderer *r, TTF_Font *font, char *ascii_art, int x, int y, SDL_Color color) {
     int line_height = TTF_FontHeight(font);
     const char *line_start = ascii_art;
     int line_num = 0;
