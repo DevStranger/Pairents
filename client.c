@@ -6,15 +6,10 @@
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include <SDL2/SDL.h>
+#include "GUI.h"
 
 #define PORT 12345
 #define SERVER_IP "127.0.0.1"
-#define WINDOW_WIDTH 500
-#define WINDOW_HEIGHT 200
-#define BUTTON_WIDTH 90
-#define BUTTON_HEIGHT 60
-
-const char *button_labels[] = { "Feed", "Read", "Sleep", "Hug", "Play" };
 
 int connect_to_server() {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -51,61 +46,33 @@ int connect_to_server() {
     return sock;
 }
 
-void draw_buttons(SDL_Renderer *ren, SDL_Rect *buttons) {
-    SDL_SetRenderDrawColor(ren, 200, 200, 200, 255);
-    SDL_RenderClear(ren);
-
-    for (int i = 0; i < 5; ++i) {
-        SDL_SetRenderDrawColor(ren, 100, 100, 255, 255);
-        SDL_RenderFillRect(ren, &buttons[i]);
-    }
-
-    SDL_RenderPresent(ren);
-}
-
 int main(int argc, char *argv[]) {
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-        fprintf(stderr, "SDL Init Error: %s\n", SDL_GetError());
+    if (GUI_Init() != 0) {
+        fprintf(stderr, "GUI_Init failed\n");
         return 1;
     }
 
-    SDL_Window *win = SDL_CreateWindow("Wybierz akcję", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                       WINDOW_WIDTH, WINDOW_HEIGHT, 0);
-    if (!win) {
-        fprintf(stderr, "SDL CreateWindow Error: %s\n", SDL_GetError());
-        SDL_Quit();
+    if (GUI_CreateWindow("Wybierz akcję") != 0) {
+        fprintf(stderr, "GUI_CreateWindow failed\n");
+        GUI_Quit();
         return 1;
     }
 
-    SDL_Renderer *ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
-    if (!ren) {
-        SDL_DestroyWindow(win);
-        SDL_Quit();
-        return 1;
-    }
-
-    // Stałe połączenie z serwerem
     int sock = connect_to_server();
     if (sock < 0) {
-        SDL_DestroyRenderer(ren);
-        SDL_DestroyWindow(win);
-        SDL_Quit();
+        GUI_Destroy();
+        GUI_Quit();
         return 1;
     }
 
     SDL_Rect buttons[5];
-    for (int i = 0; i < 5; ++i) {
-        buttons[i].x = 20 + i * (BUTTON_WIDTH + 10);
-        buttons[i].y = 50;
-        buttons[i].w = BUTTON_WIDTH;
-        buttons[i].h = BUTTON_HEIGHT;
-    }
+    GUI_InitButtons(buttons);
 
     int running = 1;
     int waiting_for_response = 0;
     SDL_Event e;
 
-    draw_buttons(ren, buttons);
+    GUI_DrawButtons(buttons);
 
     while (running) {
         while (SDL_PollEvent(&e)) {
@@ -113,22 +80,15 @@ int main(int argc, char *argv[]) {
                 running = 0;
             } else if (!waiting_for_response &&
                        e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
-                int mx = e.button.x;
-                int my = e.button.y;
-                for (int i = 0; i < 5; ++i) {
-                    if (mx >= buttons[i].x && mx <= buttons[i].x + buttons[i].w &&
-                        my >= buttons[i].y && my <= buttons[i].y + buttons[i].h) {
-
-                        unsigned char choice = (unsigned char)i;
-                        if (send(sock, &choice, 1, 0) != 1) {
-                            perror("send");
-                            running = 0;
-                            break;
-                        }
-
-                        waiting_for_response = 1;
+                int choice = GUI_HandleClick(e.button.x, e.button.y, buttons);
+                if (choice >= 0 && choice < 5) {
+                    unsigned char ch = (unsigned char)choice;
+                    if (send(sock, &ch, 1, 0) != 1) {
+                        perror("send");
+                        running = 0;
                         break;
                     }
+                    waiting_for_response = 1;
                 }
             }
         }
@@ -143,25 +103,13 @@ int main(int argc, char *argv[]) {
                         break;
                     case 1:
                         printf("Wynik: takie same wybory (accepted).\n");
-                        // Tu wykonujemy akcję zgodnie z wybraną opcją
                         switch (response[0]) {
-                            case 0: // Feed
-                                printf("Fed\n");
-                                break;
-                            case 1: // Read
-                                printf("Read\n");
-                                break;
-                            case 2: // Sleep
-                                printf("Slept\n");
-                                break;
-                            case 3: // Hug
-                                printf("Hugged\n");
-                                break;
-                            case 4: // Play
-                                printf("Played\n");
-                                break;
-                            default:
-                                printf("Nieznana akcja\n");
+                            case 0: printf("Fed\n"); break;
+                            case 1: printf("Read\n"); break;
+                            case 2: printf("Slept\n"); break;
+                            case 3: printf("Hugged\n"); break;
+                            case 4: printf("Played\n"); break;
+                            default: printf("Nieznana akcja\n");
                         }
                         break;
                     case 2:
@@ -171,7 +119,7 @@ int main(int argc, char *argv[]) {
                         printf("Nieznany status.\n");
                 }
                 waiting_for_response = 0;
-                draw_buttons(ren, buttons);
+                GUI_DrawButtons(buttons);
             } else if (received == 0) {
                 printf("Serwer zamknął połączenie.\n");
                 running = 0;
@@ -183,13 +131,12 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        SDL_Delay(10);  // mały delay, żeby nie zjadało CPU
+        SDL_Delay(10);
     }
 
     close(sock);
-    SDL_DestroyRenderer(ren);
-    SDL_DestroyWindow(win);
-    SDL_Quit();
+    GUI_Destroy();
+    GUI_Quit();
 
     return 0;
 }
