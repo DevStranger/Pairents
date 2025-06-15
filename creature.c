@@ -46,8 +46,6 @@ void update_creature(Creature *c) {
     }
 }
 
-extern char *load_ascii_art(const char *filename);
-
 void set_temp_ascii_art(Creature *c, const char *filename, Uint32 duration_ms) {
     char *new_art = load_ascii_art(filename);
     if (!new_art) {
