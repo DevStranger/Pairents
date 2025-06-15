@@ -13,7 +13,38 @@
 #define SERVER_IP "127.0.0.1"
 
 int connect_to_server() {
-    // ... (bez zmian, jak w oryginale)
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) {
+        perror("socket");
+        return -1;
+    }
+
+    struct sockaddr_in serv_addr = {
+        .sin_family = AF_INET,
+        .sin_port = htons(PORT)
+    };
+    inet_pton(AF_INET, SERVER_IP, &serv_addr.sin_addr);
+
+    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+        perror("connect");
+        close(sock);
+        return -1;
+    }
+
+    // Ustaw socket w tryb nieblokujący
+    int flags = fcntl(sock, F_GETFL, 0);
+    if (flags == -1) {
+        perror("fcntl get");
+        close(sock);
+        return -1;
+    }
+    if (fcntl(sock, F_SETFL, flags | O_NONBLOCK) == -1) {
+        perror("fcntl set");
+        close(sock);
+        return -1;
+    }
+
+    return sock;
 }
 
 int main(int argc, char *argv[]) {
