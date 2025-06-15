@@ -87,12 +87,16 @@ int gui_init(GUI *gui) {
         return -1;
     }
 
-    // Pozycje przycisków
+    // Rozciągamy przyciski na całą szerokość okna
+    int button_width = WINDOW_WIDTH / BUTTON_COUNT;
+    int button_height = BUTTON_HEIGHT;  // możesz zostawić stałą wysokość
+    int button_y = WINDOW_HEIGHT - button_height - 10;  // 10 px margines od dołu
+    
     for (int i = 0; i < BUTTON_COUNT; ++i) {
-        gui->buttons[i].x = 20 + i * (BUTTON_WIDTH + 10);
-        gui->buttons[i].y = WINDOW_HEIGHT - BUTTON_HEIGHT - 20;
-        gui->buttons[i].w = BUTTON_WIDTH;
-        gui->buttons[i].h = BUTTON_HEIGHT;
+        gui->buttons[i].x = i * button_width;
+        gui->buttons[i].y = button_y;
+        gui->buttons[i].w = button_width;
+        gui->buttons[i].h = button_height;
     }
 
     return 0;
