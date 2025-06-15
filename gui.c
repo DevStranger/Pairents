@@ -132,7 +132,7 @@ void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text,
     char buf[16];
 
     SDL_SetRenderDrawColor(gui->renderer, 30, 30, 30, 200);
-    SDL_Rect bg = {base_x - 10, base_y - 10, 420, line_height * 6 + 20};
+    SDL_Rect bg = {base_x - 10, base_y - 10, 450, line_height * 6 + 20};
     SDL_RenderFillRect(gui->renderer, &bg);
 
     // Hunger
@@ -140,42 +140,42 @@ void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text,
     draw_text(gui->renderer, font_text, "Hunger", base_x + 40, base_y, white);
     draw_bar(gui->renderer, base_x + 170, base_y + 4, 200, 20, creature->hunger, green);
     sprintf(buf, "%d%%", creature->hunger);
-    draw_text(gui->renderer, font_text, buf, base_x + 340, base_y, white);
+    draw_text(gui->renderer, font_text, buf, base_x + 370, base_y, white);
 
     // Happiness
     draw_text(gui->renderer, font_emoji, "🌼", base_x, base_y + line_height, white);
     draw_text(gui->renderer, font_text, "Happiness", base_x + 40, base_y + line_height, white);
     draw_bar(gui->renderer, base_x + 170, base_y + line_height + 4, 200, 20, creature->happiness, yellow);
     sprintf(buf, "%d%%", creature->happiness);
-    draw_text(gui->renderer, font_text, buf, base_x + 340, base_y + line_height, white);
+    draw_text(gui->renderer, font_text, buf, base_x + 370, base_y + line_height, white);
 
     // Sleep
     draw_text(gui->renderer, font_emoji, "💤", base_x, base_y + 2 * line_height, white);
     draw_text(gui->renderer, font_text, "Sleep", base_x + 40, base_y + 2 * line_height, white);
     draw_bar(gui->renderer, base_x + 170, base_y + 2 * line_height + 4, 200, 20, creature->sleep, blue);
     sprintf(buf, "%d%%", creature->sleep);
-    draw_text(gui->renderer, font_text, buf, base_x + 340, base_y + 2 * line_height, white);
+    draw_text(gui->renderer, font_text, buf, base_x + 370, base_y + 2 * line_height, white);
 
     // Health
     draw_text(gui->renderer, font_emoji, "💊", base_x, base_y + 3 * line_height, white);
     draw_text(gui->renderer, font_text, "Health", base_x + 40, base_y + 3 * line_height, white);
     draw_bar(gui->renderer, base_x + 170, base_y + 3 * line_height + 4, 200, 20, creature->health, red);
     sprintf(buf, "%d%%", creature->health);
-    draw_text(gui->renderer, font_text, buf, base_x + 340, base_y + 3 * line_height, white);
+    draw_text(gui->renderer, font_text, buf, base_x + 370, base_y + 3 * line_height, white);
 
     // Growth
     draw_text(gui->renderer, font_emoji, "🌱", base_x, base_y + 4 * line_height, white);
     draw_text(gui->renderer, font_text, "Growth", base_x + 40, base_y + 4 * line_height, white);
     draw_bar(gui->renderer, base_x + 170, base_y + 4 * line_height + 4, 200, 20, creature->growth, pink);
     sprintf(buf, "%d%%", creature->growth);
-    draw_text(gui->renderer, font_text, buf, base_x + 340, base_y + 4 * line_height, white);
+    draw_text(gui->renderer, font_text, buf, base_x + 370, base_y + 4 * line_height, white);
 
     // Love
     draw_text(gui->renderer, font_emoji, "❤️", base_x, base_y + 5 * line_height, white);
     draw_text(gui->renderer, font_text, "Love", base_x + 40, base_y + 5 * line_height, white);
     draw_bar(gui->renderer, base_x + 170, base_y + 5 * line_height + 4, 200, 20, creature->love, orange);
     sprintf(buf, "%d%%", creature->love);
-    draw_text(gui->renderer, font_text, buf, base_x + 340, base_y + 5 * line_height, white);
+    draw_text(gui->renderer, font_text, buf, base_x + 370, base_y + 5 * line_height, white);
 }
 
 void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Font *font_emoji) {
