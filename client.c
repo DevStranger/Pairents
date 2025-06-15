@@ -49,6 +49,30 @@ int connect_to_server() {
     return sock;
 }
 
+char *load_ascii_art(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        perror("fopen ascii_art");
+        return NULL;
+    }
+
+    fseek(file, 0, SEEK_END);
+    long size = ftell(file);
+    rewind(file);
+
+    char *buffer = malloc(size + 1);
+    if (!buffer) {
+        fclose(file);
+        fprintf(stderr, "malloc ascii_art failed\n");
+        return NULL;
+    }
+
+    fread(buffer, 1, size, file);
+    buffer[size] = '\0';
+    fclose(file);
+    return buffer;
+}
+
 void apply_action(Creature *c, unsigned char action) {
     switch (action) {
         case 0: // Fed
@@ -109,7 +133,17 @@ int main(int argc, char *argv[]) {
         .health = 90,
         .growth = 50,
         .love = 75
+        .ascii_art = load_ascii_art("assets/default.txt")
     };
+
+    
+    if (!creature.ascii_art) {
+        fprintf(stderr, "Nie udało się załadować ASCII art\n");
+        TTF_CloseFont(font_text);
+        TTF_CloseFont(font_emoji);
+        gui_destroy(&gui);
+        return 1;
+    }
 
     int sock = connect_to_server();
     if (sock < 0) {
@@ -233,6 +267,7 @@ int main(int argc, char *argv[]) {
     close(sock);
     TTF_CloseFont(font_text);
     TTF_CloseFont(font_emoji);
+    free(creature.ascii_art);
     gui_destroy(&gui);
     return 0;
 }
