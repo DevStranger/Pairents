@@ -28,7 +28,7 @@ void gui_destroy(GUI *gui);
 void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Font *font_emoji);
 
 // Rysowanie całego GUI: tła, pasków i przycisków
-void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Font *font_emoji);
+void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Font *font_emoji, SDL_Color text_color, SDL_Color bg_color);
 
 // Sprawdzenie, czy kliknięcie (x,y) wpadło na któryś z przycisków
 // Zwraca indeks przycisku (0..BUTTON_COUNT-1) lub -1, jeśli poza przyciskami
