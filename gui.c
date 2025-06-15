@@ -68,7 +68,7 @@ int gui_init(GUI *gui) {
         return -1;
     }
 
-    gui->font_text = TTF_OpenFont("assets/SomeRegularFont.ttf", 12);
+    gui->font_text = TTF_OpenFont("assets/MatrixtypeDisplayBold-6R4e6.ttf", 14);
     if (!gui->font_text) {
         fprintf(stderr, "TTF_OpenFont font_text failed: %s\n", TTF_GetError());
         return -1;
