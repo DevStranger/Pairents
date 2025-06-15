@@ -8,6 +8,7 @@
 #include <SDL2/SDL.h>
 
 #include "gui.h"
+#include "creature.h"
 
 #define PORT 12345
 #define SERVER_IP "127.0.0.1"
@@ -53,13 +54,48 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    int sock = connect_to_server();
-    if (sock < 0) {
+    // Inicjalizacja TTF i wczytanie fontów
+    if (TTF_Init() == -1) {
+        fprintf(stderr, "TTF_Init Error: %s\n", TTF_GetError());
         gui_destroy(&gui);
         return 1;
     }
 
-    gui_draw_buttons(&gui);
+    // Załaduj fonty (dostosuj ścieżkę i rozmiar fontów)
+    TTF_Font *font_text = TTF_OpenFont("fonts/OpenSans-Regular.ttf", 20);
+    if (!font_text) {
+        fprintf(stderr, "TTF_OpenFont font_text failed: %s\n", TTF_GetError());
+        gui_destroy(&gui);
+        return 1;
+    }
+    TTF_Font *font_emoji = TTF_OpenFont("fonts/OpenSansEmoji.ttf", 24);
+    if (!font_emoji) {
+        fprintf(stderr, "TTF_OpenFont font_emoji failed: %s\n", TTF_GetError());
+        TTF_CloseFont(font_text);
+        gui_destroy(&gui);
+        return 1;
+    }
+
+    // Stwórz przykładowego stwora (na początek)
+    Creature creature = {
+        .hunger = 70,
+        .happiness = 80,
+        .sleep = 60,
+        .health = 90,
+        .growth = 50,
+        .love = 75
+    };
+
+    int sock = connect_to_server();
+    if (sock < 0) {
+        TTF_CloseFont(font_text);
+        TTF_CloseFont(font_emoji);
+        gui_destroy(&gui);
+        return 1;
+    }
+
+    // Poprawne wywołanie gui_draw_buttons z argumentami
+    gui_draw_buttons(&gui, &creature, font_text, font_emoji);
 
     int running = 1;
     int waiting_for_response = 0;
@@ -110,7 +146,9 @@ int main(int argc, char *argv[]) {
                         printf("Nieznany status.\n");
                 }
                 waiting_for_response = 0;
-                gui_draw_buttons(&gui);
+
+                // Odśwież GUI po odpowiedzi
+                gui_draw_buttons(&gui, &creature, font_text, font_emoji);
             } else if (received == 0) {
                 printf("Serwer zamknął połączenie.\n");
                 running = 0;
@@ -126,6 +164,10 @@ int main(int argc, char *argv[]) {
     }
 
     close(sock);
+
+    // Posprzątaj fonty i SDL
+    TTF_CloseFont(font_text);
+    TTF_CloseFont(font_emoji);
     gui_destroy(&gui);
     return 0;
 }
