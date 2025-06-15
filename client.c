@@ -132,10 +132,9 @@ int main(int argc, char *argv[]) {
         .health = 90,
         .growth = 50,
         .love = 75,
-        .ascii_art = NULL
+        .ascii_art = load_ascii_art("assets/default.txt")
     };
 
-    creature.ascii_art = load_ascii_art("assets/default.txt");
     if (!creature.ascii_art) {
         fprintf(stderr, "Nie udało się załadować ASCII art\n");
         TTF_CloseFont(font_text);
