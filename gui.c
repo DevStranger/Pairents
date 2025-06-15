@@ -132,7 +132,7 @@ void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text,
     char buf[16];
 
     SDL_SetRenderDrawColor(gui->renderer, 30, 30, 30, 200);
-    SDL_Rect bg = {base_x - 10, base_y - 10, 370, line_height * 6 + 20};
+    SDL_Rect bg = {base_x - 10, base_y - 10, 420, line_height * 6 + 20};
     SDL_RenderFillRect(gui->renderer, &bg);
 
     // Hunger
