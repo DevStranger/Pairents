@@ -159,39 +159,25 @@ void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text,
     // Health
     draw_text(gui->renderer, font_emoji, "💊", base_x, base_y + 3 * line_height, white);
     draw_text(gui->renderer, font_text, "Health", base_x + 40, base_y + 3 * line_height, white);
-    draw_bar(gui->renderer, font_text, base_x + 170, base_y + 3 * line_height + 4, 200, 20, creature->health, red);
+    draw_bar(gui->renderer, base_x + 170, base_y + 3 * line_height + 4, 200, 20, creature->health, red);
     sprintf(buf, "%d%%", creature->health);
     draw_text(gui->renderer, font_text, buf, base_x + 385, base_y + 3 * line_height, white);
 
     // Growth
     draw_text(gui->renderer, font_emoji, "🌱", base_x, base_y + 4 * line_height, white);
     draw_text(gui->renderer, font_text, "Growth", base_x + 40, base_y + 4 * line_height, white);
-    draw_bar(gui->renderer, font_text, base_x + 170, base_y + 4 * line_height + 4, 200, 20, creature->growth, pink);
+    draw_bar(gui->renderer, base_x + 170, base_y + 4 * line_height + 4, 200, 20, creature->growth, pink);
     sprintf(buf, "%d%%", creature->growth);
     draw_text(gui->renderer, font_text, buf, base_x + 385, base_y + 4 * line_height, white);
 
     // Love
     draw_text(gui->renderer, font_emoji, "❤️", base_x, base_y + 5 * line_height, white);
     draw_text(gui->renderer, font_text, "Love", base_x + 40, base_y + 5 * line_height, white);
-    draw_bar(gui->renderer, font_text, base_x + 170, base_y + 5 * line_height + 4, 200, 20, creature->love, orange);
+    draw_bar(gui->renderer, base_x + 170, base_y + 5 * line_height + 4, 200, 20, creature->love, orange);
     sprintf(buf, "%d%%", creature->love);
     draw_text(gui->renderer, font_text, buf, base_x + 385, base_y + 5 * line_height, white);
-
-    // === DODANE: ASCII ART Z PLIKU ===
-    FILE *file = fopen("assets/default.txt", "r");
-    if (file) {
-        char art[4096]; 
-        size_t len = fread(art, 1, sizeof(art) - 1, file);
-        art[len] = '\0';
-        fclose(file);
-
-        int art_x = 500;  // prawa strona okna
-        int art_y = 30;   // podobnie jak statusy
-        draw_ascii_art(gui->renderer, font_text, art, art_x, art_y, white);
-    } else {
-        fprintf(stderr, "Nie udało się otworzyć assets/default.txt\n");
-    }
 }
+
 void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Font *font_emoji) {
     // Czyścimy ekran
     SDL_SetRenderDrawColor(gui->renderer, 50, 50, 100, 255);
