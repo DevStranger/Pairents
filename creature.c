@@ -45,3 +45,19 @@ void update_creature(Creature *c) {
         c->level++;
     }
 }
+
+extern char *load_ascii_art(const char *filename);
+
+void set_temp_ascii_art(Creature *c, const char *filename, Uint32 duration_ms) {
+    char *new_art = load_ascii_art(filename);
+    if (!new_art) {
+        fprintf(stderr, "Nie udało się załadować ASCII art z %s\n", filename);
+        return;
+    }
+
+    if (c->ascii_art)
+        free(c->ascii_art);
+
+    c->ascii_art = new_art;
+    c->temp_art_end_time = SDL_GetTicks() + duration_ms;
+}
