@@ -137,7 +137,6 @@ int main(int argc, char *argv[]) {
             unsigned char response[2];
             ssize_t received = recv(sock, response, 2, 0);
             if (received == 2) {
-                printf("Partner wybrał: %s\n", button_labels[response[0]]);
                 switch (response[1]) {
                     case 0:
                         printf("Wynik: różne wybory (mismatch).\n");
