@@ -117,10 +117,26 @@ int gui_init(GUI *gui) {
 }
 
 void gui_destroy(GUI *gui) {
-    if (gui->font_ascii_art) TTF_CloseFont(gui->font_ascii_art);
-    if (gui->font_text) TTF_CloseFont(gui->font_text);
-    if (gui->renderer) SDL_DestroyRenderer(gui->renderer);
-    if (gui->window) SDL_DestroyWindow(gui->window);
+    if (gui->font_ascii_art_default) {
+        TTF_CloseFont(gui->font_ascii_art_default);
+        gui->font_ascii_art_default = NULL;
+    }
+    if (gui->font_ascii_art_small) {
+        TTF_CloseFont(gui->font_ascii_art_small);
+        gui->font_ascii_art_small = NULL;
+    }
+    if (gui->font_text) {
+        TTF_CloseFont(gui->font_text);
+        gui->font_text = NULL;
+    }
+    if (gui->renderer) {
+        SDL_DestroyRenderer(gui->renderer);
+        gui->renderer = NULL;
+    }
+    if (gui->window) {
+        SDL_DestroyWindow(gui->window);
+        gui->window = NULL;
+    }
     TTF_Quit();
     SDL_Quit();
 }
