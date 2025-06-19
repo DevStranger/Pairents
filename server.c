@@ -5,8 +5,6 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 
-#include "creature.h"
-
 #define PORT 12345
 #define MAX_CLIENTS 10
 
@@ -123,9 +121,9 @@ void *handle_client(void *arg) {
             if (sock2 != -1) send_response(sock2, c1, status);
         
             // Jeśli accepted, wyślij też stan stwora do obu klientów
-           if (status == 1) {
-                apply_action(&assigned_pair->creature, c1);
-                update_creature(&assigned_pair->creature);
+            if (status == 1) {
+                if (sock1 != -1) send(sock1, &assigned_pair->creature, sizeof(Creature), 0);
+                if (sock2 != -1) send(sock2, &assigned_pair->creature, sizeof(Creature), 0);
             }
         
             pthread_mutex_lock(&assigned_pair->lock);
