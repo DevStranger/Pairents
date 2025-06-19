@@ -201,7 +201,6 @@ void gui_draw_level(GUI *gui, int level, TTF_Font *font_text) {
     int center_x = WINDOW_WIDTH - radius - 10; // 10px od prawego brzegu
     int center_y = radius + 10;                // 10px od góry
 
-    // Prostokąt jako tło "kółka"
     SDL_Rect rect = {center_x - radius, center_y - radius, radius * 2, radius * 2};
     SDL_SetRenderDrawColor(gui->renderer, button_blue.r, button_blue.g, button_blue.b, button_blue.a);
     SDL_RenderFillRect(gui->renderer, &rect);
