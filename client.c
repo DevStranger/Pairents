@@ -168,7 +168,6 @@ int main(int argc, char *argv[]) {
                             "assets/played.txt"
                         };
                         if (partner_choice <= 4) {
-                            printf("Akcja: %s\n", action_ascii_files[partner_choice]);
                             char *ascii_art = load_ascii_art(action_ascii_files[partner_choice]);
                             if (ascii_art) {
                                 set_temp_ascii_art(&creature, ascii_art, 8000);
@@ -214,6 +213,13 @@ int main(int argc, char *argv[]) {
         }
 
         update_creature(&creature);
+
+        Uint32 now = SDL_GetTicks();
+        if (creature.temp_ascii_art && now > creature.temp_art_end_time) {
+            free(creature.temp_ascii_art);
+            creature.temp_ascii_art = NULL;
+            creature.temp_art_end_time = 0;
+        }
 
         SDL_SetRenderDrawColor(gui.renderer, 0, 0, 0, 255);
         SDL_RenderClear(gui.renderer);
