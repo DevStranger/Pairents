@@ -17,7 +17,8 @@ typedef struct {
     SDL_Renderer *renderer;
     SDL_Rect buttons[BUTTON_COUNT];
     TTF_Font *font_text;      // font na teksty przy paskach, przyciskach itd.
-    TTF_Font *font_ascii_art; // font do ASCII arta (Matrixtype)
+    TTF_Font *font_ascii_art_default;
+    TTF_Font *font_ascii_art_small;
 } GUI;
 
 // Inicjalizacja SDL, TTF, okna i renderera oraz pozycji przycisków
