@@ -91,7 +91,9 @@ int gui_init(GUI *gui) {
         return -1;
     }
 
-    gui->renderer = SDL_CreateRenderer(gui->window, -1, SDL_RENDERER_ACCELERATED);
+    // Tutaj zmiana: dodaj SDL_RENDERER_PRESENTVSYNC
+    gui->renderer = SDL_CreateRenderer(gui->window, -1,
+        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (!gui->renderer) {
         fprintf(stderr, "SDL CreateRenderer Error: %s\n", SDL_GetError());
         SDL_DestroyWindow(gui->window);
@@ -100,15 +102,11 @@ int gui_init(GUI *gui) {
         return -1;
     }
 
-    // Parametry układu
-    int margin = 20;              // margines z lewej i prawej
-    int spacing = 10;             // odstęp między guzikami
+    // reszta jak była
+    int margin = 20;
+    int spacing = 10;
     int available_width = WINDOW_WIDTH - 2 * margin;
-
-    // Dynamiczne obliczenie szerokości guzika
     int button_width = (available_width - spacing * (BUTTON_COUNT - 1)) / BUTTON_COUNT;
-
-    // Obliczamy start_x, by całość była wyśrodkowana
     int total_buttons_width = button_width * BUTTON_COUNT + spacing * (BUTTON_COUNT - 1);
     int start_x = (WINDOW_WIDTH - total_buttons_width) / 2;
 
