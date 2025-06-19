@@ -183,6 +183,7 @@ int main(int argc, char *argv[]) {
                 switch (status) {
                     case 0:
                         printf("Wynik: różne wybory (mismatch).\n");
+                        waiting_for_response = 0;
                         break;
                     case 1:
                         printf("Wynik: takie same wybory (accepted).\n");
@@ -206,6 +207,7 @@ int main(int argc, char *argv[]) {
                         // Rozpocznij odbiór nieblokujący stwora
                         reset_creature_receiver();
                         waiting_for_creature = 1;
+                        waiting_for_Response = 0;
                         break;
                     case 2:
                         printf("Wynik: oczekiwanie na drugiego gracza.\n");
