@@ -89,10 +89,11 @@ void set_temp_ascii_art(Creature *c, char *new_art, Uint32 duration_ms) {
         return;
     }
 
-    if (c->ascii_art)
-        free(c->ascii_art);
+    if (c->temp_ascii_art) {
+        free(c->temp_ascii_art);
+    }
 
-    c->ascii_art = new_art;
+    c->temp_ascii_art = new_art;
     c->temp_art_end_time = SDL_GetTicks() + duration_ms;
 }
 
