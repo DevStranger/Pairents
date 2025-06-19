@@ -23,11 +23,10 @@ typedef struct {
     char *temp_ascii_art;     // tymczasowy ASCII art po akcji
     Uint32 temp_art_end_time; // czas kiedy przestajemy wyświetlać temp ascii art (SDL_GetTicks ms)
 
-    int changed; // 1 = nastąpiła zmiana 0 = bez zmian
 } Creature;
 
 void init_creature(Creature *c);
-int update_creature(Creature *c);
+void update_creature(Creature *c);
 
 // Funkcja ustawiająca tymczasowy ASCII art na określony czas
 void set_temp_ascii_art(Creature *c, char *new_art, Uint32 duration_ms);
