@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
                 switch (status) {
                     case 0:
                         printf("Wynik: różne wybory (mismatch).\n");
-                        snprintf(message, sizeof(message), "Mismatch :(\nTry again!");
+                        snprintf(message, sizeof(message), "Mismatch :( Try again!");
                         waiting_for_response = 0;
                         break;
                     case 1:
@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
                                     free(current_ascii_art);
                                 }
                                 current_ascii_art = new_art;
-                                temp_art_end_time = SDL_GetTicks() + 8000; // wyświetlaj przez 8 sekund
+                                temp_art_end_time = SDL_GetTicks() + 4000; // wyświetlaj przez 4 sekundy
                             } else {
                                 fprintf(stderr, "Nie udało się załadować pliku ASCII art: %s\n", action_ascii_files[partner_choice]);
                                 snprintf(message, sizeof(message), "Bunny got lost :(");
