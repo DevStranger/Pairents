@@ -6,53 +6,12 @@
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include <SDL2/SDL.h>
-#include <pthread.h>
 
 #include "gui.h"
 #include "creature.h"
 
 #define PORT 12345
 #define SERVER_IP "127.0.0.1"
-
-Creature creature;
-pthread_mutex_t creature_mutex = PTHREAD_MUTEX_INITIALIZER;
-int sock;
-int running = 1;
-
-// wątek odbierający stan stworka
-void *receive_creature_thread(void *arg) {
-    while (running) {
-        Creature new_creature;
-        ssize_t received = 0;
-        char *ptr = (char *)&new_creature;
-        size_t to_receive = sizeof(Creature);
-
-        while (to_receive > 0) {
-            ssize_t r = recv(sock, ptr + received, to_receive, 0);
-            if (r <= 0) {
-                if (r == 0) {
-                    printf("Serwer zamknął połączenie (wątek).\n");
-                    running = 0;
-                    return NULL;
-                }
-                if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    SDL_Delay(1);
-                    continue;
-                }
-                perror("recv wątku stwora");
-                running = 0;
-                return NULL;
-            }
-            received += r;
-            to_receive -= r;
-        }
-
-        pthread_mutex_lock(&creature_mutex);
-        creature = new_creature;
-        pthread_mutex_unlock(&creature_mutex);
-    }
-    return NULL;
-}
 
 int connect_to_server() {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -142,7 +101,9 @@ void apply_action(Creature *c, unsigned char action) {
 
 int main(int argc, char *argv[]) {
     GUI gui;
-    if (gui_init(&gui) != 0) return 1;
+    if (gui_init(&gui) != 0) {
+        return 1;
+    }
 
     if (TTF_Init() == -1) {
         fprintf(stderr, "TTF_Init Error: %s\n", TTF_GetError());
@@ -156,7 +117,6 @@ int main(int argc, char *argv[]) {
         gui_destroy(&gui);
         return 1;
     }
-
     TTF_Font *font_emoji = TTF_OpenFont("assets/NotoEmoji-VariableFont_wght.ttf", 24);
     if (!font_emoji) {
         fprintf(stderr, "TTF_OpenFont font_emoji failed: %s\n", TTF_GetError());
@@ -165,7 +125,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    creature = (Creature){
+    Creature creature = {
         .hunger = 70,
         .happiness = 80,
         .sleep = 60,
@@ -183,7 +143,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    sock = connect_to_server();
+    int sock = connect_to_server();
     if (sock < 0) {
         TTF_CloseFont(font_text);
         TTF_CloseFont(font_emoji);
@@ -191,13 +151,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    pthread_t recv_thread;
-    if (pthread_create(&recv_thread, NULL, receive_creature_thread, NULL) != 0) {
-        perror("pthread_create");
-        close(sock);
-        return 1;
-    }
-
+    int running = 1;
     int waiting_for_response = 0;
     SDL_Event e;
 
@@ -205,20 +159,17 @@ int main(int argc, char *argv[]) {
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) {
                 running = 0;
-            } else if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
+            } else if (!waiting_for_response &&
+                       e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
                 int button_index = gui_check_button_click(&gui, e.button.x, e.button.y);
                 if (button_index >= 0) {
-                    if (!waiting_for_response) {
-                        unsigned char choice = (unsigned char)button_index;
-                        if (send(sock, &choice, 1, 0) != 1) {
-                            perror("send");
-                            running = 0;
-                            break;
-                        }
-                        waiting_for_response = 1;
-                    } else {
-                        perror("wait for response");
+                    unsigned char choice = (unsigned char)button_index;
+                    if (send(sock, &choice, 1, 0) != 1) {
+                        perror("send");
+                        running = 0;
+                        break;
                     }
+                    waiting_for_response = 1;
                 }
             }
         }
@@ -229,7 +180,7 @@ int main(int argc, char *argv[]) {
             if (received == 2) {
                 unsigned char partner_choice = response[0];
                 unsigned char status = response[1];
-
+        
                 switch (status) {
                     case 0:
                         printf("Wynik: różne wybory (mismatch).\n");
@@ -243,14 +194,47 @@ int main(int argc, char *argv[]) {
                             "assets/hugged.txt",
                             "assets/played.txt"
                         };
+                        
                         if (partner_choice <= 4) {
+                            printf("Akcja: %s\n", action_ascii_files[partner_choice]);
                             char *ascii_art = load_ascii_art(action_ascii_files[partner_choice]);
                             if (ascii_art) {
-                                pthread_mutex_lock(&creature_mutex);
-                                set_temp_ascii_art(&creature, ascii_art, 8000); // 8 sek
-                                pthread_mutex_unlock(&creature_mutex);
+                                set_temp_ascii_art(&creature, ascii_art, 8000); // 8 sekund
                             } else {
-                                fprintf(stderr, "Nie udało się załadować ASCII art: %s\n", action_ascii_files[partner_choice]);
+                                fprintf(stderr, "Nie udało się załadować pliku ASCII art: %s\n", action_ascii_files[partner_choice]);
+                            }
+                        }
+
+                        // Odbierz stan stwora od serwera
+                        {
+                            Creature new_creature;
+                            ssize_t creature_received = 0;
+                            char *ptr = (char *)&new_creature;
+                            size_t to_receive = sizeof(Creature);
+        
+                            // Blokujący odbiór całej struktury (możesz rozważyć timeout lub inny sposób)
+                            while (to_receive > 0) {
+                                ssize_t r = recv(sock, ptr + creature_received, to_receive, 0);
+                                if (r <= 0) {
+                                    if (r == 0) {
+                                        printf("Serwer zamknął połączenie podczas odbierania stwora.\n");
+                                        running = 0;
+                                        break;
+                                    }
+                                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                                        // Nie ma jeszcze danych, kontynuuj pętlę
+                                        SDL_Delay(1);
+                                        continue;
+                                    }
+                                    perror("recv stwora");
+                                    running = 0;
+                                    break;
+                                }
+                                creature_received += r;
+                                to_receive -= r;
+                            }
+                            if (running) {
+                                creature = new_creature;
                             }
                         }
                         break;
@@ -260,48 +244,38 @@ int main(int argc, char *argv[]) {
                     default:
                         printf("Nieznany status.\n");
                 }
-
                 waiting_for_response = 0;
             } else if (received == 0) {
                 printf("Serwer zamknął połączenie.\n");
                 running = 0;
             } else if (received == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-                // Brak danych, nic nie rób
+                // brak danych, nic nie rób
             } else {
                 perror("recv");
                 running = 0;
             }
         }
+        
+        // Aktualizuj stan stwora co iterację
+        update_creature(&creature);
 
-    // Aktualizacja stwora 
-    pthread_mutex_lock(&creature_mutex);
-    update_creature(&creature); // nawet jeśli nic się zmieniło, zaktualizuj stan
-    // RYSOWANIE - zrób pełne odrysowanie GUI za każdym razem:
-    SDL_SetRenderDrawColor(gui.renderer, 0, 0, 0, 255); // czarne tło
-    SDL_RenderClear(gui.renderer);
+        // Czyść ekran (tutaj zakładam, że gui.renderer jest SDL_Renderer)
+        SDL_SetRenderDrawColor(gui.renderer, 0, 0, 0, 255); // czarny
+        SDL_RenderClear(gui.renderer);
 
-    gui_draw_buttons(&gui, &creature, font_text, font_emoji);  // Zawsze rysuj!
+        // Rysuj GUI z aktualnym stanem
+        gui_draw_buttons(&gui, &creature, font_text, font_emoji);
 
-    SDL_RenderPresent(gui.renderer);
-    pthread_mutex_unlock(&creature_mutex);
+        // Wyświetl nowy frame
+        SDL_RenderPresent(gui.renderer);
 
-    SDL_Delay(16); // ok. 60 FPS
-}
-
-    running = 0;
-    pthread_join(recv_thread, NULL);
-    pthread_mutex_destroy(&creature_mutex);
-    close(sock);
-
-    if (creature.ascii_art) {
-        free(creature.ascii_art);
-        creature.ascii_art = NULL;
+        SDL_Delay(16); // ok. 60 FPS
     }
 
+    close(sock);
     TTF_CloseFont(font_text);
     TTF_CloseFont(font_emoji);
+    free(creature.ascii_art);
     gui_destroy(&gui);
-    TTF_Quit();
-
     return 0;
 }
