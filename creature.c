@@ -1,4 +1,9 @@
 #include "creature.h"
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/socket.h> // dla recv()
 
 void init_creature(Creature *c) {
     c->hunger = 80;
@@ -14,6 +19,13 @@ void init_creature(Creature *c) {
     c->last_update2 = now;
     c->last_update3 = now;
     c->last_update4 = now;
+
+    c->ascii_art = NULL;
+    c->temp_ascii_art = NULL;
+    c->temp_art_end_time = 0;
+
+    c->received_bytes = 0;
+    c->receiving = 0;
 }
 
 void update_creature(Creature *c) {
@@ -57,4 +69,35 @@ void set_temp_ascii_art(Creature *c, char *new_art, Uint32 duration_ms) {
 
     c->ascii_art = new_art;
     c->temp_art_end_time = SDL_GetTicks() + duration_ms;
+}
+
+// Funkcja odbierająca strukturę Creature w kawałkach (non-blocking recv)
+int try_receive_creature(int sock, Creature *c) {
+    if (!c->receiving) {
+        c->received_bytes = 0;
+        c->receiving = 1;
+    }
+
+    ssize_t n = recv(sock, c->recv_buffer + c->received_bytes,
+                     sizeof(Creature) - c->received_bytes, 0);
+
+    if (n == -1) {
+        // Brak danych lub błąd
+        return 0;
+    } else if (n == 0) {
+        // Serwer zamknął połączenie
+        fprintf(stderr, "Serwer zamknął połączenie\n");
+        return -1;
+    }
+
+    c->received_bytes += n;
+
+    if (c->received_bytes >= sizeof(Creature)) {
+        // Odbiór zakończony — kopiujemy dane do struktury
+        memcpy(c, c->recv_buffer, sizeof(Creature));
+        c->receiving = 0;
+        return 1; // Sukces — dane gotowe
+    }
+
+    return 0; // Nadal czekamy na więcej danych
 }
