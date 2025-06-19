@@ -19,8 +19,6 @@ typedef struct {
     time_t last_update3;
     time_t last_update4;
 
-    char *ascii_art;
-    char *temp_ascii_art;
     Uint32 temp_art_end_time;
 } Creature;
 
