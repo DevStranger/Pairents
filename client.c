@@ -205,20 +205,22 @@ int main(int argc, char *argv[]) {
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) {
                 running = 0;
-            } else if (!waiting_for_response &&
-                       e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
+            } else if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
                 int button_index = gui_check_button_click(&gui, e.button.x, e.button.y);
                 if (button_index >= 0) {
-                    unsigned char choice = (unsigned char)button_index;
-                    if (send(sock, &choice, 1, 0) != 1) {
-                        perror("send");
-                        running = 0;
-                        break;
+                    if (!waiting_for_response) {
+                        unsigned char choice = (unsigned char)button_index;
+                        if (send(sock, &choice, 1, 0) != 1) {
+                            perror("send");
+                            running = 0;
+                            break;
+                        }
+                        waiting_for_response = 1;
+                    } else {
+                        perror("wait for response");
                     }
-                    waiting_for_response = 1;
                 }
             }
-        }
 
         if (waiting_for_response) {
             unsigned char response[2];
