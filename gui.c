@@ -271,7 +271,7 @@ void gui_draw_message(GUI *gui, const char *message, TTF_Font *font) {
     if (!message || !*message) return;
 
     SDL_Color text_color = {255, 255, 255, 255};
-    SDL_Color bg_color = {30, 30, 30, 200}; // półprzezroczyste tło
+    SDL_Color bg_color = {255, 0, 0, 255};  // czerwony pełny
 
     int x = 30;
     int y = 540;
