@@ -274,10 +274,12 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        // 🔁 Aktualizacja stwora co iterację
+        // Aktualizacja stwora co iterację
         pthread_mutex_lock(&creature_mutex);
-        update_creature(&creature);
-        gui_draw_buttons(&gui, &creature, font_text, font_emoji);
+        int changed = update_creature(&creature);
+        if (changed) {
+            gui_draw_buttons(&gui, &creature, font_text, font_emoji);
+        }
         pthread_mutex_unlock(&creature_mutex);
 
         // Renderuj
@@ -286,6 +288,12 @@ int main(int argc, char *argv[]) {
         SDL_RenderPresent(gui.renderer);
 
         SDL_Delay(16); // 60 FPS
+    }
+
+    // questionable
+    if (creature.ascii_art) {
+        free(creature.ascii_art);
+        creature.ascii_art = NULL;
     }
 
     // Sprzątanie
