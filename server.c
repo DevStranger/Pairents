@@ -4,18 +4,10 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include "creature.h"   // <--- nowość
 
 #define PORT 12345
 #define MAX_CLIENTS 10
-
-typedef struct {
-    unsigned char hunger;
-    unsigned char happiness;
-    unsigned char sleep;
-    unsigned char health;
-    unsigned char growth;
-    unsigned char love;
-} Creature;
 
 typedef struct {
     int client1;
@@ -65,6 +57,7 @@ void *handle_client(void *arg) {
         assigned_pair->has_choice1 = 0;
         assigned_pair->has_choice2 = 0;
         pthread_mutex_init(&assigned_pair->lock, NULL);
+        init_creature(&assigned_pair->creature);   // <--- inicjalizacja stwora!
         is_first = 1;
         pair_count++;
     }
@@ -97,42 +90,35 @@ void *handle_client(void *arg) {
             assigned_pair->has_choice2 = 1;
         }
 
-        // Obaj gracze wybrali — rozstrzygamy turę
-      if (assigned_pair->has_choice1 && assigned_pair->has_choice2) {
+        if (assigned_pair->has_choice1 && assigned_pair->has_choice2) {
             unsigned char status = (assigned_pair->choice1 == assigned_pair->choice2) ? 1 : 0;
             unsigned char c1 = assigned_pair->choice1;
             unsigned char c2 = assigned_pair->choice2;
-        
-            // Jeśli zaakceptowano, zaktualizuj stan stwora (przykładowo)
+
             if (status == 1) {
-                // Przykład prostej aktualizacji na podstawie akcji
-                assigned_pair->creature.hunger = (assigned_pair->creature.hunger > 5) ? assigned_pair->creature.hunger - 5 : 0;
-                assigned_pair->creature.happiness = (assigned_pair->creature.happiness + 3 < 100) ? assigned_pair->creature.happiness + 3 : 100;
-                // itd. DO UZUPEŁNIENIA
+                apply_action(&assigned_pair->creature, c1);
+                update_creature(&assigned_pair->creature);
             }
-        
+
             int sock1 = assigned_pair->client1;
             int sock2 = assigned_pair->client2;
-        
+
             pthread_mutex_unlock(&assigned_pair->lock);
-        
-            // Wysyłaj status akcji
+
             if (sock1 != -1) send_response(sock1, c2, status);
             if (sock2 != -1) send_response(sock2, c1, status);
-        
-            // Jeśli accepted, wyślij też stan stwora do obu klientów
+
             if (status == 1) {
                 if (sock1 != -1) send(sock1, &assigned_pair->creature, sizeof(Creature), 0);
                 if (sock2 != -1) send(sock2, &assigned_pair->creature, sizeof(Creature), 0);
             }
-        
+
             pthread_mutex_lock(&assigned_pair->lock);
             assigned_pair->has_choice1 = 0;
             assigned_pair->has_choice2 = 0;
             pthread_mutex_unlock(&assigned_pair->lock);
         } else {
-            // Jeden gracz już wybrał — wysyłamy info o czekaniu
-            unsigned char partner_choice = 0; // nieważne
+            unsigned char partner_choice = 0;
             unsigned char status = 2; // oczekiwanie
 
             pthread_mutex_unlock(&assigned_pair->lock);
