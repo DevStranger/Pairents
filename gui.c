@@ -194,46 +194,37 @@ void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text,
 }
 
 void gui_draw_level(GUI *gui, int level, TTF_Font *font_text) {
-    SDL_Color bg_color = {100, 100, 255, 255};  // kolor tła (jak guziki)
-    SDL_Color text_color = {255, 255, 255, 255};  // biały tekst
+    SDL_Color button_blue = {100, 100, 255, 255};  // kolor jak guziki
+    SDL_Color white = {255, 255, 255, 255};        // biały tekst
 
-    // Konwertujemy poziom na string
-    char level_text[8];
-    snprintf(level_text, sizeof(level_text), "%d", level);
+    int radius = 20;
+    int center_x = WINDOW_WIDTH - radius - 10; // 10px od prawego brzegu
+    int center_y = radius + 10;                // 10px od góry
 
-    // Renderujemy tekst, żeby poznać jego rozmiar
-    SDL_Surface *surface = TTF_RenderUTF8_Blended(font_text, level_text, text_color);
-    if (!surface) return;
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(gui->renderer, surface);
-    if (!texture) {
-        SDL_FreeSurface(surface);
-        return;
-    }
-
-    // Ustawienia pozycji i wymiarów
-    int padding = 10;
-    SDL_Rect rect = {
-        .x = WINDOW_WIDTH - surface->w - 2 * padding,
-        .y = 10,
-        .w = surface->w + 2 * padding,
-        .h = surface->h + 2 * padding
-    };
-
-    // Tło prostokąta
-    SDL_SetRenderDrawColor(gui->renderer, bg_color.r, bg_color.g, bg_color.b, 255);
+    // Prostokąt jako tło "kółka"
+    SDL_Rect rect = {center_x - radius, center_y - radius, radius * 2, radius * 2};
+    SDL_SetRenderDrawColor(gui->renderer, button_blue.r, button_blue.g, button_blue.b, button_blue.a);
     SDL_RenderFillRect(gui->renderer, &rect);
 
-    // Tekst (na środku prostokąta)
-    SDL_Rect text_rect = {
-        .x = rect.x + padding,
-        .y = rect.y + padding,
-        .w = surface->w,
-        .h = surface->h
-    };
-    SDL_RenderCopy(gui->renderer, texture, NULL, &text_rect);
+    // Wyświetlenie poziomu na środku
+    char buf[8];
+    snprintf(buf, sizeof(buf), "%d", level);
 
-    SDL_FreeSurface(surface);
-    SDL_DestroyTexture(texture);
+    SDL_Surface *surface = TTF_RenderUTF8_Blended(font_text, buf, white);
+    if (surface) {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(gui->renderer, surface);
+        if (texture) {
+            SDL_Rect dst_rect;
+            dst_rect.w = surface->w;
+            dst_rect.h = surface->h;
+            dst_rect.x = center_x - dst_rect.w / 2;
+            dst_rect.y = center_y - dst_rect.h / 2;
+
+            SDL_RenderCopy(gui->renderer, texture, NULL, &dst_rect);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(surface);
+    }
 }
 
 void gui_draw_buttons(GUI *gui, Creature *creature, const char *ascii_art, TTF_Font *font_text, TTF_Font *font_emoji) {
