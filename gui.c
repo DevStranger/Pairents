@@ -220,7 +220,7 @@ void gui_draw_level(GUI *gui, int level, TTF_Font *font_text) {
     }
 }
 
-void gui_draw_buttons(GUI *gui, Creature *creature, const char *ascii_art, TTF_Font *font_text, TTF_Font *font_emoji) {
+void gui_draw_buttons(GUI *gui, Creature *creature, const char *ascii_art, int is_default_ascii_art, TTF_Font *font_text, TTF_Font *font_emoji) {
     // Czyścimy ekran
     SDL_SetRenderDrawColor(gui->renderer, 50, 50, 100, 255);
     SDL_RenderClear(gui->renderer);
@@ -232,7 +232,14 @@ void gui_draw_buttons(GUI *gui, Creature *creature, const char *ascii_art, TTF_F
     SDL_Color white = {255, 255, 255, 255};
     int art_x = 475;  
     int art_y = 90;
-    draw_ascii_art(gui->renderer, gui->font_ascii_art, ascii_art, art_x, art_y, white);
+
+    if (ascii_art) {
+        if (is_default_ascii_art) {
+            draw_ascii_art(gui->renderer, gui->font_ascii_art_default, ascii_art, art_x, art_y, white);
+        } else {
+            draw_ascii_art(gui->renderer, gui->font_ascii_art_small, ascii_art, art_x, art_y, white);
+        }
+    }
 
     // Rysujemy poziom
     gui_draw_level(gui, creature->level, font_text);
@@ -246,8 +253,6 @@ void gui_draw_buttons(GUI *gui, Creature *creature, const char *ascii_art, TTF_F
         draw_text(gui->renderer, font_text, button_labels[i],
                   gui->buttons[i].x + 10, gui->buttons[i].y + 10, (SDL_Color){255,255,255,255});
     }
-
-    //SDL_RenderPresent(gui->renderer);
 }
 
 int gui_check_button_click(GUI *gui, int x, int y) {
