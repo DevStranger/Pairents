@@ -221,6 +221,7 @@ int main(int argc, char *argv[]) {
                     }
                 }
             }
+        }
 
         if (waiting_for_response) {
             unsigned char response[2];
