@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <sys/socket.h> // dla recv()
+#include <sys/socket.h>
 #include <errno.h>
 
 void init_creature(Creature *c) {
@@ -69,7 +69,8 @@ void set_temp_ascii_art(Creature *c, char *new_art, Uint32 duration_ms) {
     c->temp_art_end_time = SDL_GetTicks() + duration_ms;
 }
 
-// Pomocnicza struktura tylko wewnątrz pliku .c
+// --- Obsługa odbioru struktury Creature po kawałku ---
+
 typedef struct {
     char recv_buffer[sizeof(Creature)];
     size_t received_bytes;
@@ -78,18 +79,27 @@ typedef struct {
 
 static CreatureReceiver receiver = { .received_bytes = 0, .receiving = 0 };
 
-// Funkcja odbierająca strukturę Creature w kawałkach (non-blocking recv)
-int try_receive_creature(int sock, Creature *c) {
+void reset_creature_receiver(void) {
+    receiver.received_bytes = 0;
+    receiver.receiving = 0;
+}
+
+// Zwraca:
+// 1 - odebrano całość struktury,
+// 0 - nadal czekamy na dane,
+// -1 - błąd (recv zwrócił błąd lub zamknięcie połączenia)
+int creature_recv_partial(int sock, Creature *c) {
     if (!receiver.receiving) {
-        receiver.received_bytes = 0;
         receiver.receiving = 1;
+        receiver.received_bytes = 0;
     }
 
     ssize_t n = recv(sock, receiver.recv_buffer + receiver.received_bytes,
                      sizeof(Creature) - receiver.received_bytes, 0);
 
     if (n == -1) {
-        if (errno == EWOULDBLOCK || errno == EAGAIN) return 0;
+        if (errno == EWOULDBLOCK || errno == EAGAIN)
+            return 0; // brak danych teraz, spróbuj później
         perror("recv");
         return -1;
     } else if (n == 0) {
@@ -101,8 +111,7 @@ int try_receive_creature(int sock, Creature *c) {
 
     if (receiver.received_bytes >= sizeof(Creature)) {
         memcpy(c, receiver.recv_buffer, sizeof(Creature));
-        receiver.received_bytes = 0;
-        receiver.receiving = 0;
+        reset_creature_receiver();
         return 1;
     }
 
