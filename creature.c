@@ -56,6 +56,33 @@ void update_creature(Creature *c) {
     }
 }
 
+void apply_action(Creature *c, unsigned char action) {
+    switch (action) {
+        case 0: // Fed
+            c->hunger += 15;
+            if (c->hunger > 100) c->hunger = 100;
+            break;
+        case 1: // Read
+            c->growth += 10;
+            if (c->growth > 100) c->growth = 100;
+            break;
+        case 2: // Slept
+            c->sleep += 20;
+            if (c->sleep > 100) c->sleep = 100;
+            break;
+        case 3: // Hugged
+            c->love += 15;
+            if (c->love > 100) c->love = 100;
+            break;
+        case 4: // Played
+            c->happiness += 15;
+            if (c->happiness > 100) c->happiness = 100;
+            break;
+        default:
+            break;
+    }
+}
+
 void set_temp_ascii_art(Creature *c, char *new_art, Uint32 duration_ms) {
     if (!new_art) {
         fprintf(stderr, "set_temp_ascii_art: nie podano ASCII artu\n");
