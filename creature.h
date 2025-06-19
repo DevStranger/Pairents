@@ -27,7 +27,7 @@ typedef struct {
 } Creature;
 
 void init_creature(Creature *c);
-void update_creature(Creature *c);
+int update_creature(Creature *c);
 
 // Funkcja ustawiająca tymczasowy ASCII art na określony czas
 void set_temp_ascii_art(Creature *c, char *new_art, Uint32 duration_ms);
