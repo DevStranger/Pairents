@@ -193,7 +193,7 @@ void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text,
     draw_text(gui->renderer, font_text, buf, base_x + 385, base_y + 5 * line_height, white);
 }
 
-void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Font *font_emoji) {
+void gui_draw_buttons(GUI *gui, Creature *creature, const char *ascii_art, TTF_Font *font_text, TTF_Font *font_emoji) {
     // Czyścimy ekran
     SDL_SetRenderDrawColor(gui->renderer, 50, 50, 100, 255);
     SDL_RenderClear(gui->renderer);
@@ -205,9 +205,7 @@ void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Fon
     SDL_Color white = {255, 255, 255, 255};
     int art_x = 475;  
     int art_y = 90;
-    const char *art_to_draw = creature->temp_ascii_art ? creature->temp_ascii_art : creature->ascii_art;
-    draw_ascii_art(gui->renderer, gui->font_ascii_art, art_to_draw, art_x, art_y, white);
-
+    draw_ascii_art(gui->renderer, gui->font_ascii_art, ascii_art, art_x, art_y, white);
 
     // Rysujemy guziki
     for (int i = 0; i < BUTTON_COUNT; ++i) {
