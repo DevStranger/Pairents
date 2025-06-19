@@ -270,18 +270,20 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        pthread_mutex_lock(&creature_mutex);
-        update_creature(&creature);
-        // Rysuj GUI w każdej iteracji
-        gui_draw_buttons(&gui, &creature, font_text, font_emoji);
-        pthread_mutex_unlock(&creature_mutex);
+    // Aktualizacja stwora 
+    pthread_mutex_lock(&creature_mutex);
+    update_creature(&creature); // nawet jeśli nic się zmieniło, zaktualizuj stan
+    // RYSOWANIE - zrób pełne odrysowanie GUI za każdym razem:
+    SDL_SetRenderDrawColor(gui.renderer, 0, 0, 0, 255); // czarne tło
+    SDL_RenderClear(gui.renderer);
 
-        SDL_SetRenderDrawColor(gui.renderer, 0, 0, 0, 255);
-        SDL_RenderClear(gui.renderer);
-        SDL_RenderPresent(gui.renderer);
+    gui_draw_buttons(&gui, &creature, font_text, font_emoji);  // Zawsze rysuj!
 
-        SDL_Delay(16);
-    }
+    SDL_RenderPresent(gui.renderer);
+    pthread_mutex_unlock(&creature_mutex);
+
+    SDL_Delay(16); // ok. 60 FPS
+}
 
     running = 0;
     pthread_join(recv_thread, NULL);
