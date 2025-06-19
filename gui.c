@@ -193,6 +193,40 @@ void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text,
     draw_text(gui->renderer, font_text, buf, base_x + 385, base_y + 5 * line_height, white);
 }
 
+void gui_draw_level(GUI *gui, int level, TTF_Font *font_text) {
+    SDL_Color yellow = {255, 255, 0, 255};
+    SDL_Color black = {0, 0, 0, 255};
+
+    int radius = 20;
+    int center_x = WINDOW_WIDTH - radius - 10; // 10px od prawego brzegu
+    int center_y = radius + 10;                 // 10px od góry
+
+    SDL_Rect rect = {center_x - radius, center_y - radius, radius * 2, radius * 2};
+    SDL_SetRenderDrawColor(gui->renderer, yellow.r, yellow.g, yellow.b, yellow.a);
+    SDL_RenderFillRect(gui->renderer, &rect);
+
+    // Teraz rysujemy numer poziomu na środku kółka
+    char buf[8];
+    snprintf(buf, sizeof(buf), "%d", level);
+
+    // Wyśrodkuj tekst
+    SDL_Surface *surface = TTF_RenderUTF8_Blended(font_text, buf, black);
+    if (surface) {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(gui->renderer, surface);
+        if (texture) {
+            SDL_Rect dst_rect;
+            dst_rect.w = surface->w;
+            dst_rect.h = surface->h;
+            dst_rect.x = center_x - dst_rect.w / 2;
+            dst_rect.y = center_y - dst_rect.h / 2;
+
+            SDL_RenderCopy(gui->renderer, texture, NULL, &dst_rect);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(surface);
+    }
+}
+
 void gui_draw_buttons(GUI *gui, Creature *creature, const char *ascii_art, TTF_Font *font_text, TTF_Font *font_emoji) {
     // Czyścimy ekran
     SDL_SetRenderDrawColor(gui->renderer, 50, 50, 100, 255);
@@ -207,6 +241,9 @@ void gui_draw_buttons(GUI *gui, Creature *creature, const char *ascii_art, TTF_F
     int art_y = 90;
     draw_ascii_art(gui->renderer, gui->font_ascii_art, ascii_art, art_x, art_y, white);
 
+    // Rysujemy poziom
+    gui_draw_level(gui, creature->level, font_text);
+    
     // Rysujemy guziki
     for (int i = 0; i < BUTTON_COUNT; ++i) {
         SDL_SetRenderDrawColor(gui->renderer, 100, 100, 255, 255);
