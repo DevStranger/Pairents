@@ -154,7 +154,6 @@ int main(int argc, char *argv[]) {
     if (!font_text) {
         fprintf(stderr, "TTF_OpenFont font_text failed: %s\n", TTF_GetError());
         gui_destroy(&gui);
-        TTF_Quit();
         return 1;
     }
 
@@ -163,7 +162,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "TTF_OpenFont font_emoji failed: %s\n", TTF_GetError());
         TTF_CloseFont(font_text);
         gui_destroy(&gui);
-        TTF_Quit();
         return 1;
     }
 
@@ -182,17 +180,14 @@ int main(int argc, char *argv[]) {
         TTF_CloseFont(font_text);
         TTF_CloseFont(font_emoji);
         gui_destroy(&gui);
-        TTF_Quit();
         return 1;
     }
 
     sock = connect_to_server();
     if (sock < 0) {
-        free(creature.ascii_art);
         TTF_CloseFont(font_text);
         TTF_CloseFont(font_emoji);
         gui_destroy(&gui);
-        TTF_Quit();
         return 1;
     }
 
@@ -200,15 +195,9 @@ int main(int argc, char *argv[]) {
     if (pthread_create(&recv_thread, NULL, receive_creature_thread, NULL) != 0) {
         perror("pthread_create");
         close(sock);
-        free(creature.ascii_art);
-        TTF_CloseFont(font_text);
-        TTF_CloseFont(font_emoji);
-        gui_destroy(&gui);
-        TTF_Quit();
         return 1;
     }
 
-    int running = 1;
     int waiting_for_response = 0;
     SDL_Event e;
 
@@ -255,7 +244,7 @@ int main(int argc, char *argv[]) {
                             char *ascii_art = load_ascii_art(action_ascii_files[partner_choice]);
                             if (ascii_art) {
                                 pthread_mutex_lock(&creature_mutex);
-                                set_temp_ascii_art(&creature, ascii_art, 8000); // 8 sekund
+                                set_temp_ascii_art(&creature, ascii_art, 8000); // 8 sek
                                 pthread_mutex_unlock(&creature_mutex);
                             } else {
                                 fprintf(stderr, "Nie udało się załadować ASCII art: %s\n", action_ascii_files[partner_choice]);
@@ -274,7 +263,7 @@ int main(int argc, char *argv[]) {
                 printf("Serwer zamknął połączenie.\n");
                 running = 0;
             } else if (received == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-                // brak danych, kontynuuj
+                // Brak danych, nic nie rób
             } else {
                 perror("recv");
                 running = 0;
@@ -283,14 +272,15 @@ int main(int argc, char *argv[]) {
 
         pthread_mutex_lock(&creature_mutex);
         update_creature(&creature);
-        // Rysuj GUI za każdym razem
-        SDL_SetRenderDrawColor(gui.renderer, 0, 0, 0, 255);
-        SDL_RenderClear(gui.renderer);
+        // Rysuj GUI w każdej iteracji
         gui_draw_buttons(&gui, &creature, font_text, font_emoji);
-        SDL_RenderPresent(gui.renderer);
         pthread_mutex_unlock(&creature_mutex);
 
-        SDL_Delay(16); // ~60 FPS
+        SDL_SetRenderDrawColor(gui.renderer, 0, 0, 0, 255);
+        SDL_RenderClear(gui.renderer);
+        SDL_RenderPresent(gui.renderer);
+
+        SDL_Delay(16);
     }
 
     running = 0;
@@ -305,8 +295,8 @@ int main(int argc, char *argv[]) {
 
     TTF_CloseFont(font_text);
     TTF_CloseFont(font_emoji);
-    TTF_Quit();
     gui_destroy(&gui);
+    TTF_Quit();
 
     return 0;
 }
