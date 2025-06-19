@@ -251,7 +251,7 @@ void gui_draw_buttons(GUI *gui, Creature *creature, const char *ascii_art, TTF_F
                   gui->buttons[i].x + 10, gui->buttons[i].y + 10, (SDL_Color){255,255,255,255});
     }
 
-    SDL_RenderPresent(gui->renderer);
+    //SDL_RenderPresent(gui->renderer);
 }
 
 int gui_check_button_click(GUI *gui, int x, int y) {
