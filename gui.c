@@ -270,10 +270,37 @@ int gui_check_button_click(GUI *gui, int x, int y) {
 void gui_draw_message(GUI *gui, const char *message, TTF_Font *font_text) {
     if (!message || strlen(message) == 0) return;
 
-    SDL_Color white = {255, 255, 255, 255};
+    SDL_Color text_color = {255, 255, 255, 255};
+    SDL_Color bg_color = {100, 100, 255, 255}; // jasnoniebieskie tło, takie jak guziki
 
     int x = 20;
-    int y = 230; // po wskaźnikach (6 * 30 linii + marginesy), nad guzikami
+    int y = 230;
 
-    draw_text(gui->renderer, font_text, message, x, y, white);
+    // Renderujemy tekst na surface, by poznać jego rozmiar
+    SDL_Surface *surface = TTF_RenderUTF8_Blended(font_text, message, text_color);
+    if (!surface) {
+        fprintf(stderr, "TTF_RenderUTF8_Blended failed: %s\n", TTF_GetError());
+        return;
+    }
+
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(gui->renderer, surface);
+    if (!texture) {
+        fprintf(stderr, "SDL_CreateTextureFromSurface failed: %s\n", SDL_GetError());
+        SDL_FreeSurface(surface);
+        return;
+    }
+
+    // Prostokąt tła - nieco większy od tekstu
+    SDL_Rect bg_rect = { x - 5, y - 5, surface->w + 10, surface->h + 10 };
+
+    // Rysujemy tło
+    SDL_SetRenderDrawColor(gui->renderer, bg_color.r, bg_color.g, bg_color.b, bg_color.a);
+    SDL_RenderFillRect(gui->renderer, &bg_rect);
+
+    // Rysujemy tekst na tle
+    SDL_Rect dst_rect = { x, y, surface->w, surface->h };
+    SDL_RenderCopy(gui->renderer, texture, NULL, &dst_rect);
+
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
 }
