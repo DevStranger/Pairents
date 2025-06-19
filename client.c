@@ -214,6 +214,7 @@ int main(int argc, char *argv[]) {
                         printf("Nieznany status.\n");
                         waiting_for_response = 0;
                 }
+                waiting_for_response = 0;
             } else if (received == 0) {
                 printf("Serwer zamknął połączenie.\n");
                 running = 0;
