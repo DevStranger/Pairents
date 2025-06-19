@@ -163,13 +163,13 @@ int main(int argc, char *argv[]) {
                     case 0:
                         printf("Wynik: różne wybory (mismatch).\n");
                         snprintf(message, sizeof(message), "Mismatch :( Try again!");
-                        message_expire_time = SDL_GetTicks() + 4000;
+                        message_expire_time = SDL_GetTicks() + 8000;
                         waiting_for_response = 0;
                         break;
                     case 1:
                         printf("Wynik: takie same wybory (accepted).\n");
                         snprintf(message, sizeof(message), "Matched!");
-                        message_expire_time = SDL_GetTicks() + 4000;
+                        message_expire_time = SDL_GetTicks() + 8000;
                         const char *action_ascii_files[] = {
                             "assets/fed.txt",
                             "assets/read.txt",
@@ -188,7 +188,7 @@ int main(int argc, char *argv[]) {
                             } else {
                                 fprintf(stderr, "Nie udało się załadować pliku ASCII art: %s\n", action_ascii_files[partner_choice]);
                                 snprintf(message, sizeof(message), "Bunny got lost :(");
-                                message_expire_time = SDL_GetTicks() + 4000;
+                                message_expire_time = SDL_GetTicks() + 8000;
                             }
                         }
 
@@ -200,12 +200,12 @@ int main(int argc, char *argv[]) {
                     case 2:
                         printf("Wynik: oczekiwanie na drugiego gracza.\n");
                         snprintf(message, sizeof(message), "Waiting ...");
-                        message_expire_time = SDL_GetTicks() + 4000;
+                        message_expire_time = SDL_GetTicks() + 45000;
                         break;
                     default:
                         printf("Nieznany status.\n");
                         snprintf(message, sizeof(message), "Unknown status");
-                        message_expire_time = SDL_GetTicks() + 4000;
+                        message_expire_time = SDL_GetTicks() + 8000;
                         waiting_for_response = 0;
                 }
             } else if (received == 0) {
