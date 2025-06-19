@@ -81,7 +81,8 @@ int main(int argc, char *argv[]) {
     GUI gui;
     if (gui_init(&gui) != 0) return 1;
 
-    char message[128] = "";        // na wiadomości od serwera
+    char message[128] = "";            // na wiadomości od serwera
+    Uint32 message_expire_time = 0;    // czas wyświetlania wiadomości
     
     if (TTF_Init() == -1) {
         fprintf(stderr, "TTF_Init Error: %s\n", TTF_GetError());
