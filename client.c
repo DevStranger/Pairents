@@ -248,7 +248,7 @@ int main(int argc, char *argv[]) {
         if (SDL_GetTicks() >= message_expire_time) {
             message[0] = '\0';
         }
-        SDL_RenderPresent(gui.renderer);
+        //SDL_RenderPresent(gui.renderer);
 
         SDL_Delay(16);
     }
