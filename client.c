@@ -13,7 +13,10 @@
 #define PORT 12345
 #define SERVER_IP "127.0.0.1"
 
-int waiting_for_creature = 0; // zmienna globalna
+char *current_ascii_art = NULL;       // aktualny ascii art do wyświetlenia
+Uint32 temp_art_end_time = 0;         // timestamp, do kiedy wyświetlać temp art
+char *default_ascii_art = NULL;       // domyślny ascii art
+int waiting_for_creature = 0;         // zmienna globalna
 
 int connect_to_server() {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -98,6 +101,14 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    default_ascii_art = load_ascii_art("assets/default.txt");
+    if (!default_ascii_art) {
+        fprintf(stderr, "Nie udało się załadować domyślnego ASCII art\n");
+        gui_destroy(&gui);
+        return 1;
+    }
+    current_ascii_art = default_ascii_art;  // na start wyświetlamy domyślny art
+    
     Creature creature = {
         .hunger = 70,
         .happiness = 80,
@@ -105,15 +116,7 @@ int main(int argc, char *argv[]) {
         .health = 90,
         .growth = 50,
         .love = 75,
-        .ascii_art = load_ascii_art("assets/default.txt")
     };
-    if (!creature.ascii_art) {
-        fprintf(stderr, "Nie udało się załadować ASCII art\n");
-        TTF_CloseFont(font_text);
-        TTF_CloseFont(font_emoji);
-        gui_destroy(&gui);
-        return 1;
-    }
 
     int sock = connect_to_server();
     if (sock < 0) {
@@ -168,9 +171,13 @@ int main(int argc, char *argv[]) {
                             "assets/played.txt"
                         };
                         if (partner_choice <= 4) {
-                            char *ascii_art = load_ascii_art(action_ascii_files[partner_choice]);
-                            if (ascii_art) {
-                                set_temp_ascii_art(&creature, ascii_art, 8000);
+                            char *new_art = load_ascii_art(action_ascii_files[partner_choice]);
+                            if (new_art) {
+                                if (current_ascii_art && current_ascii_art != default_ascii_art) {
+                                    free(current_ascii_art);
+                                }
+                                current_ascii_art = new_art;
+                                temp_art_end_time = SDL_GetTicks() + 8000; // wyświetlaj przez 8 sekund
                             } else {
                                 fprintf(stderr, "Nie udało się załadować pliku ASCII art: %s\n", action_ascii_files[partner_choice]);
                             }
@@ -215,10 +222,10 @@ int main(int argc, char *argv[]) {
         update_creature(&creature);
 
         Uint32 now = SDL_GetTicks();
-        if (creature.temp_ascii_art && now > creature.temp_art_end_time) {
-            free(creature.temp_ascii_art);
-            creature.temp_ascii_art = NULL;
-            creature.temp_art_end_time = 0;
+        if (current_ascii_art != default_ascii_art && now > temp_art_end_time) {
+            free(current_ascii_art);
+            current_ascii_art = default_ascii_art;
+            temp_art_end_time = 0;
         }
 
         SDL_SetRenderDrawColor(gui.renderer, 0, 0, 0, 255);
@@ -232,7 +239,12 @@ int main(int argc, char *argv[]) {
     close(sock);
     TTF_CloseFont(font_text);
     TTF_CloseFont(font_emoji);
-    free(creature.ascii_art);
+    if (current_ascii_art && current_ascii_art != default_ascii_art) {
+    free(current_ascii_art);
+    }
+    if (default_ascii_art) {
+        free(default_ascii_art);
+    }
     gui_destroy(&gui);
     return 0;
 }
