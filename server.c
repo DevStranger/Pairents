@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <pthread.h>
-#include "creature.h"   // <--- nowość
+#include "creature.h"  
 
 #define PORT 12345
 #define MAX_CLIENTS 10
