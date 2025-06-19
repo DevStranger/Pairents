@@ -36,6 +36,9 @@ void gui_draw_buttons(GUI *gui, Creature *creature, const char *ascii_art, TTF_F
 // Zwraca indeks przycisku (0..BUTTON_COUNT-1) lub -1, jeśli poza przyciskami
 int gui_check_button_click(GUI *gui, int x, int y);
 
+// Wiadomości w GUI
+void gui_draw_message(GUI *gui, const char *message, TTF_Font *font_text);
+
 // Funkcje pomocnicze do rysowania pasków i tekstu - nie są eksportowane na zewnątrz (mogą być statyczne w gui.c)
 // Nie deklarujemy ich tutaj, bo to funkcje prywatne
 
