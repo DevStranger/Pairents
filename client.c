@@ -241,8 +241,8 @@ int main(int argc, char *argv[]) {
             temp_art_end_time = 0;
         }
 
-        //SDL_SetRenderDrawColor(gui.renderer, 0, 0, 0, 255);
-        //SDL_RenderClear(gui.renderer);
+        SDL_SetRenderDrawColor(gui.renderer, 0, 0, 0, 255);
+        SDL_RenderClear(gui.renderer);
         gui_draw_buttons(&gui, &creature, current_ascii_art, font_text, font_emoji);
         if (SDL_GetTicks() < message_expire_time) {
             gui_draw_message(&gui, message, font_text);
