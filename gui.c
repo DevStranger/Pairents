@@ -266,3 +266,14 @@ int gui_check_button_click(GUI *gui, int x, int y) {
     }
     return -1;
 }
+
+void gui_draw_message(GUI *gui, const char *message, TTF_Font *font_text) {
+    if (!message || strlen(message) == 0) return;
+
+    SDL_Color white = {255, 255, 255, 255};
+
+    int x = 20;
+    int y = 230; // po wskaźnikach (6 * 30 linii + marginesy), nad guzikami
+
+    draw_text(gui->renderer, font_text, message, x, y, white);
+}
