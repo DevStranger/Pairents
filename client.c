@@ -241,7 +241,7 @@ int main(int argc, char *argv[]) {
             temp_art_end_time = 0;
         }
 
-        gui_draw_buttons(&gui, &creature, current_ascii_art, font_text, font_emoji);
+        gui_draw_buttons(&gui, &creature, current_ascii_art, current_ascii_art == default_ascii_art, font_text, font_emoji);
         if (SDL_GetTicks() < message_expire_time) {
             gui_draw_message(&gui, message, font_text);
         }
