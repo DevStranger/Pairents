@@ -267,13 +267,32 @@ int gui_check_button_click(GUI *gui, int x, int y) {
     return -1;
 }
 
-void gui_draw_message(GUI *gui, const char *message, TTF_Font *font_text) {
-    if (!message || strlen(message) == 0) return;
+void gui_draw_message(GUI *gui, const char *message, TTF_Font *font) {
+    SDL_Color text_color = {255, 255, 255, 255};
+    SDL_Color bg_color = {30, 30, 30, 200}; // ciemne półprzezroczyste tło
 
-    SDL_Color white = {255, 255, 255, 255};
+    int x = 30;
+    int y = 540;
 
-    int x = 20;
-    int y = 230; // po wskaźnikach (6 * 30 linii + marginesy), nad guzikami
+    // Utwórz surface i teksturę
+    SDL_Surface *surface = TTF_RenderUTF8_Blended(font, message, text_color);
+    if (!surface) return;
 
-    draw_text(gui->renderer, font_text, message, x, y, white);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(gui->renderer, surface);
+    if (!texture) {
+        SDL_FreeSurface(surface);
+        return;
+    }
+
+    // Rysuj tło prostokąta
+    SDL_Rect bg = {x - 10, y - 5, surface->w + 20, surface->h + 10};
+    SDL_SetRenderDrawColor(gui->renderer, bg_color.r, bg_color.g, bg_color.b, bg_color.a);
+    SDL_RenderFillRect(gui->renderer, &bg);
+
+    // Rysuj tekst
+    SDL_Rect dst = {x, y, surface->w, surface->h};
+    SDL_RenderCopy(gui->renderer, texture, NULL, &dst);
+
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
 }
