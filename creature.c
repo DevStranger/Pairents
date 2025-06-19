@@ -56,23 +56,23 @@ void update_creature(Creature *c) {
 void apply_action(Creature *c, unsigned char action) {
     switch (action) {
         case 0: // Fed
-            c->hunger += 15;
+            c->hunger += 12;
             if (c->hunger > 100) c->hunger = 100;
             break;
         case 1: // Read
-            c->growth += 10;
+            c->growth += 8;
             if (c->growth > 100) c->growth = 100;
             break;
         case 2: // Slept
-            c->sleep += 20;
+            c->sleep += 7;
             if (c->sleep > 100) c->sleep = 100;
             break;
         case 3: // Hugged
-            c->love += 15;
+            c->love += 12;
             if (c->love > 100) c->love = 100;
             break;
         case 4: // Played
-            c->happiness += 15;
+            c->happiness += 11;
             if (c->happiness > 100) c->happiness = 100;
             break;
         default:
