@@ -21,9 +21,6 @@ void init_creature(Creature *c) {
     c->last_update3 = now;
     c->last_update4 = now;
 
-    c->ascii_art = NULL;
-    c->temp_ascii_art = NULL;
-    c->temp_art_end_time = 0;
 }
 
 void update_creature(Creature *c) {
@@ -81,20 +78,6 @@ void apply_action(Creature *c, unsigned char action) {
         default:
             break;
     }
-}
-
-void set_temp_ascii_art(Creature *c, char *new_art, Uint32 duration_ms) {
-    if (!new_art) {
-        fprintf(stderr, "set_temp_ascii_art: nie podano ASCII artu\n");
-        return;
-    }
-
-    if (c->temp_ascii_art) {
-        free(c->temp_ascii_art);
-    }
-
-    c->temp_ascii_art = new_art;
-    c->temp_art_end_time = SDL_GetTicks() + duration_ms;
 }
 
 // --- Obsługa odbioru struktury Creature po kawałku ---
