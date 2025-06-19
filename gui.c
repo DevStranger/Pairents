@@ -228,8 +228,8 @@ void gui_draw_level(GUI *gui, int level, TTF_Font *font_text) {
 
 void gui_draw_buttons(GUI *gui, Creature *creature, const char *ascii_art, TTF_Font *font_text, TTF_Font *font_emoji) {
     // Czyścimy ekran
-    SDL_SetRenderDrawColor(gui->renderer, 50, 50, 100, 255);
-    SDL_RenderClear(gui->renderer);
+    //SDL_SetRenderDrawColor(gui->renderer, 50, 50, 100, 255);
+    //SDL_RenderClear(gui->renderer);
 
     // Rysujemy wskaźniki stwora (paski życia, sen, miłość, itd.)
     gui_draw_creature_status(gui, creature, font_text, font_emoji);
