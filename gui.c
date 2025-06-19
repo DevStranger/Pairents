@@ -194,25 +194,46 @@ void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text,
 }
 
 void gui_draw_level(GUI *gui, int level, TTF_Font *font_text) {
-    SDL_Color button_color = {100, 100, 255, 255};
-    SDL_Color white = {255, 255, 255, 255};
+    SDL_Color bg_color = {100, 100, 255, 255};  // kolor tła (jak guziki)
+    SDL_Color text_color = {255, 255, 255, 255};  // biały tekst
 
-    char label[16];
-    snprintf(label, sizeof(label), "lvl %d", level);
+    // Konwertujemy poziom na string
+    char level_text[8];
+    snprintf(level_text, sizeof(level_text), "%d", level);
 
+    // Renderujemy tekst, żeby poznać jego rozmiar
+    SDL_Surface *surface = TTF_RenderUTF8_Blended(font_text, level_text, text_color);
+    if (!surface) return;
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(gui->renderer, surface);
+    if (!texture) {
+        SDL_FreeSurface(surface);
+        return;
+    }
+
+    // Ustawienia pozycji i wymiarów
     int padding = 10;
-    int x = WINDOW_WIDTH - 90; 
-    int y = 20;
-    int w = 70;
-    int h = 30;
+    SDL_Rect rect = {
+        .x = WINDOW_WIDTH - surface->w - 2 * padding,
+        .y = 10,
+        .w = surface->w + 2 * padding,
+        .h = surface->h + 2 * padding
+    };
 
-    // Rysujemy prostokąt w stylu przycisku
-    SDL_Rect level_rect = {x, y, w, h};
-    SDL_SetRenderDrawColor(gui->renderer, button_color.r, button_color.g, button_color.b, button_color.a);
-    SDL_RenderFillRect(gui->renderer, &level_rect);
+    // Tło prostokąta
+    SDL_SetRenderDrawColor(gui->renderer, bg_color.r, bg_color.g, bg_color.b, 255);
+    SDL_RenderFillRect(gui->renderer, &rect);
 
-    // Rysujemy tekst 'lvl X'
-    draw_text(gui->renderer, font_text, label, x + padding, y + 5, white);
+    // Tekst (na środku prostokąta)
+    SDL_Rect text_rect = {
+        .x = rect.x + padding,
+        .y = rect.y + padding,
+        .w = surface->w,
+        .h = surface->h
+    };
+    SDL_RenderCopy(gui->renderer, texture, NULL, &text_rect);
+
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
 }
 
 void gui_draw_buttons(GUI *gui, Creature *creature, const char *ascii_art, TTF_Font *font_text, TTF_Font *font_emoji) {
