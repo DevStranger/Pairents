@@ -74,12 +74,8 @@ int gui_init(GUI *gui) {
         return -1;
     }
 
-    gui->font_ascii_art = TTF_OpenFont("assets/MatrixtypeDisplayBold-6R4e6.ttf", 4);
-    if (!gui->font_ascii_art) {
-        fprintf(stderr, "TTF_OpenFont font_ascii_art failed: %s\n", TTF_GetError());
-        TTF_CloseFont(gui->font_text);
-        return -1;
-    }
+    gui->font_ascii_art_default = TTF_OpenFont("assets/MatrixtypeDisplayBold-6R4e6.ttf", 6);
+    gui->font_ascii_art_small = TTF_OpenFont("assets/MatrixtypeDisplayBold-6R4e6.ttf", 4);
 
     gui->window = SDL_CreateWindow("Wybierz akcję",
                                    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
