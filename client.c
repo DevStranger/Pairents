@@ -154,6 +154,7 @@ int main(int argc, char *argv[]) {
     if (!font_text) {
         fprintf(stderr, "TTF_OpenFont font_text failed: %s\n", TTF_GetError());
         gui_destroy(&gui);
+        TTF_Quit();
         return 1;
     }
 
@@ -162,10 +163,10 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "TTF_OpenFont font_emoji failed: %s\n", TTF_GetError());
         TTF_CloseFont(font_text);
         gui_destroy(&gui);
+        TTF_Quit();
         return 1;
     }
 
-    // Globalny stwór
     creature = (Creature){
         .hunger = 70,
         .happiness = 80,
@@ -181,22 +182,29 @@ int main(int argc, char *argv[]) {
         TTF_CloseFont(font_text);
         TTF_CloseFont(font_emoji);
         gui_destroy(&gui);
+        TTF_Quit();
         return 1;
     }
 
     sock = connect_to_server();
     if (sock < 0) {
+        free(creature.ascii_art);
         TTF_CloseFont(font_text);
         TTF_CloseFont(font_emoji);
         gui_destroy(&gui);
+        TTF_Quit();
         return 1;
     }
 
-    // Uruchomienie wątku odbierającego stwora
     pthread_t recv_thread;
     if (pthread_create(&recv_thread, NULL, receive_creature_thread, NULL) != 0) {
         perror("pthread_create");
         close(sock);
+        free(creature.ascii_art);
+        TTF_CloseFont(font_text);
+        TTF_CloseFont(font_emoji);
+        gui_destroy(&gui);
+        TTF_Quit();
         return 1;
     }
 
@@ -223,7 +231,6 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        // Odbiór odpowiedzi (accepted/mismatch/wait) od serwera
         if (waiting_for_response) {
             unsigned char response[2];
             ssize_t received = recv(sock, response, 2, 0);
@@ -248,7 +255,7 @@ int main(int argc, char *argv[]) {
                             char *ascii_art = load_ascii_art(action_ascii_files[partner_choice]);
                             if (ascii_art) {
                                 pthread_mutex_lock(&creature_mutex);
-                                set_temp_ascii_art(&creature, ascii_art, 8000); // 8 sek
+                                set_temp_ascii_art(&creature, ascii_art, 8000); // 8 sekund
                                 pthread_mutex_unlock(&creature_mutex);
                             } else {
                                 fprintf(stderr, "Nie udało się załadować ASCII art: %s\n", action_ascii_files[partner_choice]);
@@ -267,43 +274,39 @@ int main(int argc, char *argv[]) {
                 printf("Serwer zamknął połączenie.\n");
                 running = 0;
             } else if (received == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-                // Brak danych — kontynuuj
+                // brak danych, kontynuuj
             } else {
                 perror("recv");
                 running = 0;
             }
         }
 
-        // Aktualizacja stwora co iterację
         pthread_mutex_lock(&creature_mutex);
-        int changed = update_creature(&creature);
-        if (changed) {
-            gui_draw_buttons(&gui, &creature, font_text, font_emoji);
-        }
+        update_creature(&creature);
+        // Rysuj GUI za każdym razem
+        SDL_SetRenderDrawColor(gui.renderer, 0, 0, 0, 255);
+        SDL_RenderClear(gui.renderer);
+        gui_draw_buttons(&gui, &creature, font_text, font_emoji);
+        SDL_RenderPresent(gui.renderer);
         pthread_mutex_unlock(&creature_mutex);
 
-        // Renderuj
-        SDL_SetRenderDrawColor(gui.renderer, 0, 0, 0, 255); // czarne tło
-        SDL_RenderClear(gui.renderer);
-        SDL_RenderPresent(gui.renderer);
-
-        SDL_Delay(16); // 60 FPS
+        SDL_Delay(16); // ~60 FPS
     }
 
-    // questionable
+    running = 0;
+    pthread_join(recv_thread, NULL);
+    pthread_mutex_destroy(&creature_mutex);
+    close(sock);
+
     if (creature.ascii_art) {
         free(creature.ascii_art);
         creature.ascii_art = NULL;
     }
 
-    // Sprzątanie
-    running = 0;
-    pthread_join(recv_thread, NULL);
-    pthread_mutex_destroy(&creature_mutex);
-    close(sock);
-    free(creature.ascii_art);
     TTF_CloseFont(font_text);
     TTF_CloseFont(font_emoji);
+    TTF_Quit();
     gui_destroy(&gui);
+
     return 0;
 }
