@@ -204,7 +204,7 @@ int main(int argc, char *argv[]) {
                         }
 
                         // Rozpocznij odbiór nieblokujący stwora
-                        reset_creature_receiver(&creature);
+                        reset_creature_receiver();
                         waiting_for_creature = 1;
                         break;
                     case 2:
