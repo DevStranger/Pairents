@@ -19,6 +19,16 @@ void init_creature(Creature *c) {
 void update_creature(Creature *c) {
     time_t now = time(NULL);
 
+    // Zapamiętujemy poprzedni stan
+    int old_hunger = c->hunger;
+    int old_happiness = c->happiness;
+    int old_sleep = c->sleep;
+    int old_health = c->health;
+    int old_growth = c->growth;
+    int old_love = c->love;
+    int old_level = c->level;
+
+    // Logika aktualizacji
     if (difftime(now, c->last_update1) >= 480) { 
         if (c->hunger > 0) c->hunger--;
         c->last_update1 = now;
@@ -43,6 +53,18 @@ void update_creature(Creature *c) {
 
     if (c->hunger > 70 && c->happiness > 85 && c->growth > 80 && c->love > 99) {
         c->level++;
+    }
+
+    // Sprawdzenie, czy coś się zmieniło
+    if (c->hunger != old_hunger ||
+        c->happiness != old_happiness ||
+        c->sleep != old_sleep ||
+        c->health != old_health ||
+        c->growth != old_growth ||
+        c->love != old_love ||
+        c->level != old_level) {
+
+        c->changed = 1;
     }
 }
 
