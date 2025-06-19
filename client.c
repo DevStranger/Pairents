@@ -227,7 +227,7 @@ int main(int argc, char *argv[]) {
 
         // ODBIÓR STWORA W KOLEJNYCH KLATKACH
         if (waiting_for_creature) {
-            int result = creature_recv_partial(&creature, sock);
+            int result = creature_recv_partial(sock, &creature);
             if (result == 1) {
                 printf("Stan stwora zaktualizowany.\n");
                 waiting_for_creature = 0;
