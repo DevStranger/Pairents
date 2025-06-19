@@ -81,6 +81,8 @@ int main(int argc, char *argv[]) {
     GUI gui;
     if (gui_init(&gui) != 0) return 1;
 
+    char message[128] = "";        // na wiadomości od serwera
+    
     if (TTF_Init() == -1) {
         fprintf(stderr, "TTF_Init Error: %s\n", TTF_GetError());
         gui_destroy(&gui);
@@ -159,10 +161,12 @@ int main(int argc, char *argv[]) {
                 switch (status) {
                     case 0:
                         printf("Wynik: różne wybory (mismatch).\n");
+                        snprintf(message, sizeof(message), "Nie zgadza się! Czekaj na kolejną próbę.");
                         waiting_for_response = 0;
                         break;
                     case 1:
                         printf("Wynik: takie same wybory (accepted).\n");
+                        snprintf(message, sizeof(message), "Zgoda! Akcja wykonana.");
                         const char *action_ascii_files[] = {
                             "assets/fed.txt",
                             "assets/read.txt",
@@ -180,6 +184,7 @@ int main(int argc, char *argv[]) {
                                 temp_art_end_time = SDL_GetTicks() + 8000; // wyświetlaj przez 8 sekund
                             } else {
                                 fprintf(stderr, "Nie udało się załadować pliku ASCII art: %s\n", action_ascii_files[partner_choice]);
+                                snprintf(message, sizeof(message), "Błąd: brak grafiki.");
                             }
                         }
 
@@ -190,9 +195,11 @@ int main(int argc, char *argv[]) {
                         break;
                     case 2:
                         printf("Wynik: oczekiwanie na drugiego gracza.\n");
+                        snprintf(message, sizeof(message), "Czekam na drugiego gracza...");
                         break;
                     default:
                         printf("Nieznany status.\n");
+                        snprintf(message, sizeof(message), "Nieznany status od serwera.");
                         waiting_for_response = 0;
                 }
             } else if (received == 0) {
@@ -231,6 +238,7 @@ int main(int argc, char *argv[]) {
         SDL_SetRenderDrawColor(gui.renderer, 0, 0, 0, 255);
         SDL_RenderClear(gui.renderer);
         gui_draw_buttons(&gui, &creature, current_ascii_art, font_text, font_emoji);
+        gui_draw_message(&gui, message, font_text);
         SDL_RenderPresent(gui.renderer);
 
         SDL_Delay(16);
