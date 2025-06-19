@@ -230,7 +230,7 @@ int main(int argc, char *argv[]) {
 
         SDL_SetRenderDrawColor(gui.renderer, 0, 0, 0, 255);
         SDL_RenderClear(gui.renderer);
-        gui_draw_buttons(&gui, &creature, font_text, font_emoji);
+        gui_draw_buttons(&gui, &creature, current_ascii_art, font_text, font_emoji);
         SDL_RenderPresent(gui.renderer);
 
         SDL_Delay(16);
