@@ -205,7 +205,7 @@ void gui_draw_buttons(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Fon
     SDL_Color white = {255, 255, 255, 255};
     int art_x = 475;  
     int art_y = 90;
-    dconst char *art_to_draw = creature->temp_ascii_art ? creature->temp_ascii_art : creature->ascii_art;
+    const char *art_to_draw = creature->temp_ascii_art ? creature->temp_ascii_art : creature->ascii_art;
     draw_ascii_art(gui->renderer, gui->font_ascii_art, art_to_draw, art_x, art_y, white);
 
 
