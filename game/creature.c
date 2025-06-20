@@ -53,16 +53,16 @@ void update_creature(Creature *c) {
     while (c->hunger > 70 && c->happiness > 85 && c->growth > 80 && c->love > 99) {
         c->level++;
     
-        c->hunger -= 5 * c->level;
+        c->hunger -= 12 * c->level;
         if (c->hunger < 0) c->hunger = 0;
     
-        c->happiness -= 5 * c->level;
+        c->happiness -= 12 * c->level;
         if (c->happiness < 0) c->happiness = 0;
     
-        c->growth -= 5 * c->level;
+        c->growth -= 12 * c->level;
         if (c->growth < 0) c->growth = 0;
     
-        c->love -= 5 * c->level;
+        c->love -= 12 * c->level;
         if (c->love < 0) c->love = 0;
     }
 }
