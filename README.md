@@ -83,5 +83,7 @@ Players will now collaborate to take care of the virtual pet!
 ## Disclaimer
 Comments in the code and server logs are written in Polish because this was a project for a course at a Polish uni, I am Polish — and also simply because I can, lol.
 
+---
+
 | <img src="assets/logo.png" alt="logo" width="40"/> | **Pairents** | **Maja Chlipała** | **VI.2025** |
 |:--:|:--:|:--:|:--:|
