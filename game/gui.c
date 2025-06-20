@@ -4,8 +4,10 @@
 #include <string.h>
 #include <SDL2/SDL_ttf.h>
 
+// etykiety guzików
 const char *button_labels[BUTTON_COUNT] = { "Feed", "Read", "Sleep", "Hug", "Play" };
 
+// funkcja rysująca paski postepu na wskaźniki (+ tło dla nich)
 static void draw_bar(SDL_Renderer *r, int x, int y, int w, int h, int value, SDL_Color color) {
     SDL_Rect bg = {x, y, w, h};
     SDL_SetRenderDrawColor(r, 50, 50, 50, 255);
@@ -16,6 +18,7 @@ static void draw_bar(SDL_Renderer *r, int x, int y, int w, int h, int value, SDL
     SDL_RenderFillRect(r, &fg);
 }
 
+// funkcja rysująca tekst
 static void draw_text(SDL_Renderer *r, TTF_Font *font, const char *text, int x, int y, SDL_Color color) {
     SDL_Surface *surface = TTF_RenderUTF8_Blended(font, text, color);
     if (!surface) {
@@ -34,6 +37,7 @@ static void draw_text(SDL_Renderer *r, TTF_Font *font, const char *text, int x, 
     SDL_DestroyTexture(texture);
 }
 
+// funkcja rysująca ascii art stwora
 static void draw_ascii_art(SDL_Renderer *r, TTF_Font *font, const char *ascii_art, int x, int y, SDL_Color color) {
     int line_height = TTF_FontHeight(font);
     const char *line_start = ascii_art;
@@ -56,6 +60,7 @@ static void draw_ascii_art(SDL_Renderer *r, TTF_Font *font, const char *ascii_ar
     }
 }
 
+// funkcja do inicjalizacji gui
 int gui_init(GUI *gui) {
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr, "SDL Init Error: %s\n", SDL_GetError());
@@ -87,7 +92,7 @@ int gui_init(GUI *gui) {
         return -1;
     }
 
-    // Tutaj zmiana: dodaj SDL_RENDERER_PRESENTVSYNC
+    // renderer z akceleracją i synchronizacją pionową 
     gui->renderer = SDL_CreateRenderer(gui->window, -1,
         SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (!gui->renderer) {
@@ -98,7 +103,7 @@ int gui_init(GUI *gui) {
         return -1;
     }
 
-    // reszta jak była
+    // obliczanie rozmiarów i położeń przycisków z marginesami i odstępami
     int margin = 20;
     int spacing = 10;
     int available_width = WINDOW_WIDTH - 2 * margin;
@@ -116,6 +121,7 @@ int gui_init(GUI *gui) {
     return 0;
 }
 
+// funkcja zwalniająca zasoby (fonty, renderer, okna i wyłączenie SDL/TTF)
 void gui_destroy(GUI *gui) {
     if (gui->font_ascii_art_default) {
         TTF_CloseFont(gui->font_ascii_art_default);
@@ -141,6 +147,7 @@ void gui_destroy(GUI *gui) {
     SDL_Quit();
 }
 
+// funkcja rysująca wskaźniki stwora
 void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Font *font_emoji) {
     SDL_Color white  = {255, 255, 255, 255};
     SDL_Color green  = {0, 200, 0, 255};
@@ -160,42 +167,42 @@ void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text,
     SDL_Rect bg = {base_x - 10, base_y - 10, 450, line_height * 6 + 20};
     SDL_RenderFillRect(gui->renderer, &bg);
 
-    // Hunger
+    // Hunger (głód)
     draw_text(gui->renderer, font_emoji, "🍎", base_x, base_y, white);
     draw_text(gui->renderer, font_text, "Hunger", base_x + 40, base_y, white);
     draw_bar(gui->renderer, base_x + 170, base_y + 4, 200, 20, creature->hunger, green);
     sprintf(buf, "%d%%", creature->hunger);
     draw_text(gui->renderer, font_text, buf, base_x + 385, base_y, white);
 
-    // Happiness
+    // Happiness (szczęście)
     draw_text(gui->renderer, font_emoji, "🌼", base_x, base_y + line_height, white);
     draw_text(gui->renderer, font_text, "Happiness", base_x + 40, base_y + line_height, white);
     draw_bar(gui->renderer, base_x + 170, base_y + line_height + 4, 200, 20, creature->happiness, yellow);
     sprintf(buf, "%d%%", creature->happiness);
     draw_text(gui->renderer, font_text, buf, base_x + 385, base_y + line_height, white);
 
-    // Sleep
+    // Sleep (sen)
     draw_text(gui->renderer, font_emoji, "💤", base_x, base_y + 2 * line_height, white);
     draw_text(gui->renderer, font_text, "Sleep", base_x + 40, base_y + 2 * line_height, white);
     draw_bar(gui->renderer, base_x + 170, base_y + 2 * line_height + 4, 200, 20, creature->sleep, blue);
     sprintf(buf, "%d%%", creature->sleep);
     draw_text(gui->renderer, font_text, buf, base_x + 385, base_y + 2 * line_height, white);
 
-    // Health
+    // Health (zdrowie)
     draw_text(gui->renderer, font_emoji, "💊", base_x, base_y + 3 * line_height, white);
     draw_text(gui->renderer, font_text, "Health", base_x + 40, base_y + 3 * line_height, white);
     draw_bar(gui->renderer, base_x + 170, base_y + 3 * line_height + 4, 200, 20, creature->health, red);
     sprintf(buf, "%d%%", creature->health);
     draw_text(gui->renderer, font_text, buf, base_x + 385, base_y + 3 * line_height, white);
 
-    // Growth
+    // Growth (rozwój)
     draw_text(gui->renderer, font_emoji, "🌱", base_x, base_y + 4 * line_height, white);
     draw_text(gui->renderer, font_text, "Growth", base_x + 40, base_y + 4 * line_height, white);
     draw_bar(gui->renderer, base_x + 170, base_y + 4 * line_height + 4, 200, 20, creature->growth, pink);
     sprintf(buf, "%d%%", creature->growth);
     draw_text(gui->renderer, font_text, buf, base_x + 385, base_y + 4 * line_height, white);
 
-    // Love
+    // Love (miłość)
     draw_text(gui->renderer, font_emoji, "❤️", base_x, base_y + 5 * line_height, white);
     draw_text(gui->renderer, font_text, "Love", base_x + 40, base_y + 5 * line_height, white);
     draw_bar(gui->renderer, base_x + 170, base_y + 5 * line_height + 4, 200, 20, creature->love, orange);
@@ -203,6 +210,7 @@ void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text,
     draw_text(gui->renderer, font_text, buf, base_x + 385, base_y + 5 * line_height, white);
 }
 
+// funkcja do rysowania poziomu stwora
 void gui_draw_level(GUI *gui, int level, TTF_Font *font_text) {
     SDL_Color button_blue = {100, 100, 255, 255};  // kolor jak guziki
     SDL_Color white = {255, 255, 255, 255};        // biały tekst
@@ -215,7 +223,7 @@ void gui_draw_level(GUI *gui, int level, TTF_Font *font_text) {
     SDL_SetRenderDrawColor(gui->renderer, button_blue.r, button_blue.g, button_blue.b, button_blue.a);
     SDL_RenderFillRect(gui->renderer, &rect);
 
-    // Wyświetlenie poziomu na środku
+    // wyświetlenie poziomu na środku
     char buf[8];
     snprintf(buf, sizeof(buf), "%d", level);
 
@@ -236,15 +244,16 @@ void gui_draw_level(GUI *gui, int level, TTF_Font *font_text) {
     }
 }
 
+// funkcja rysująca guziki i całe gui
 void gui_draw_buttons(GUI *gui, Creature *creature, const char *ascii_art, int is_default_ascii_art, TTF_Font *font_text, TTF_Font *font_emoji) {
-    // Czyścimy ekran
+    // czyszczenie ekranu
     SDL_SetRenderDrawColor(gui->renderer, 50, 50, 100, 255);
     SDL_RenderClear(gui->renderer);
 
-    // Rysujemy wskaźniki stwora (paski życia, sen, miłość, itd.)
+    // wskaźniki
     gui_draw_creature_status(gui, creature, font_text, font_emoji);
 
-    // Rysujemy ASCII Arta
+    // ascii art
     SDL_Color white = {255, 255, 255, 255};
     int art_x = 475;  
     int art_y = 90;
@@ -257,20 +266,21 @@ void gui_draw_buttons(GUI *gui, Creature *creature, const char *ascii_art, int i
         }
     }
 
-    // Rysujemy poziom
+    // poziom
     gui_draw_level(gui, creature->level, font_text);
     
-    // Rysujemy guziki
+    // guziki
     for (int i = 0; i < BUTTON_COUNT; ++i) {
         SDL_SetRenderDrawColor(gui->renderer, 100, 100, 255, 255);
         SDL_RenderFillRect(gui->renderer, &gui->buttons[i]);
 
-        // Rysujemy etykietę
+        // etykierty guzików
         draw_text(gui->renderer, font_text, button_labels[i],
                   gui->buttons[i].x + 10, gui->buttons[i].y + 10, (SDL_Color){255,255,255,255});
     }
 }
 
+// funkcja do sprawdzania kliknięć guzików
 int gui_check_button_click(GUI *gui, int x, int y) {
     for (int i = 0; i < BUTTON_COUNT; ++i) {
         SDL_Rect *btn = &gui->buttons[i];
@@ -282,6 +292,7 @@ int gui_check_button_click(GUI *gui, int x, int y) {
     return -1;
 }
 
+// funkcja rysująca wiadomości
 void gui_draw_message(GUI *gui, const char *message, TTF_Font *font_text) {
     if (!message || strlen(message) == 0) return;
 
@@ -291,7 +302,7 @@ void gui_draw_message(GUI *gui, const char *message, TTF_Font *font_text) {
     int x = 20;
     int y = 230;
 
-    // Renderujemy tekst na surface, by poznać jego rozmiar
+    // renderujemy tekst na surface, by poznać jego rozmiar
     SDL_Surface *surface = TTF_RenderUTF8_Blended(font_text, message, text_color);
     if (!surface) {
         fprintf(stderr, "TTF_RenderUTF8_Blended failed: %s\n", TTF_GetError());
@@ -305,14 +316,12 @@ void gui_draw_message(GUI *gui, const char *message, TTF_Font *font_text) {
         return;
     }
 
-    // Prostokąt tła - nieco większy od tekstu
+    // tło tekstu wiadomości
     SDL_Rect bg_rect = { x - 5, y - 5, surface->w + 10, surface->h + 10 };
-
-    // Rysujemy tło
     SDL_SetRenderDrawColor(gui->renderer, bg_color.r, bg_color.g, bg_color.b, bg_color.a);
     SDL_RenderFillRect(gui->renderer, &bg_rect);
 
-    // Rysujemy tekst na tle
+    // tekst wiadomości
     SDL_Rect dst_rect = { x, y, surface->w, surface->h };
     SDL_RenderCopy(gui->renderer, texture, NULL, &dst_rect);
 
