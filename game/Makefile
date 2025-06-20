@@ -1,25 +1,33 @@
+# Kompilator i flagi kompilacji
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c11 -I.
-SDL_CFLAGS = $(shell sdl2-config --cflags)
-SDL_LIBS = $(shell sdl2-config --libs) -lSDL2_ttf
-THREAD_LIBS = -pthread
+CFLAGS = -Wall -I game $(shell sdl2-config --cflags)
+LDFLAGS = $(shell sdl2-config --libs)
 
-# Pliki obiektowe klienta i serwera
+# Pliki obiektowe
 CLIENT_OBJS = client.o gui.o creature.o
 SERVER_OBJS = server.o creature.o
-
-.PHONY: all clean
 
 all: client server
 
 client: $(CLIENT_OBJS)
-	$(CC) $(CLIENT_OBJS) $(SDL_LIBS) $(THREAD_LIBS) -o client
+	$(CC) $(CLIENT_OBJS) -o game/client $(LDFLAGS)
 
 server: $(SERVER_OBJS)
-	$(CC) $(SERVER_OBJS) $(SDL_LIBS) $(THREAD_LIBS) -o server
+	$(CC) $(SERVER_OBJS) -o game/server $(LDFLAGS)
 
-%.o: %.c
-	$(CC) $(CFLAGS) $(SDL_CFLAGS) -c $< -o $@
+client.o: game/client.c
+	$(CC) $(CFLAGS) -c game/client.c -o client.o
+
+gui.o: game/gui.c
+	$(CC) $(CFLAGS) -c game/gui.c -o gui.o
+
+creature.o: game/creature.c
+	$(CC) $(CFLAGS) -c game/creature.c -o creature.o
+
+server.o: game/server.c
+	$(CC) $(CFLAGS) -c game/server.c -o server.o
 
 clean:
-	rm -f *.o client server
+	rm -f $(CLIENT_OBJS) $(SERVER_OBJS) game/client game/server
+
+.PHONY: all client server clean
