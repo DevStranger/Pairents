@@ -5,6 +5,7 @@
 #include <SDL2/SDL.h>
 #include <stdint.h>
 
+// stan stwora
 typedef struct {
     int hunger;
     int happiness;
@@ -22,6 +23,7 @@ typedef struct {
     Uint32 temp_art_end_time;
 } Creature;
 
+// funkcje stwora
 void init_creature(Creature *c);
 void update_creature(Creature *c);
 void apply_action(Creature *c, unsigned char action);
