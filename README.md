@@ -78,3 +78,6 @@ The goal of the project is to create a simple yet engaging game where two player
 ### Step 3: Play the Game
 
 Players will now collaborate to take care of the virtual pet!
+
+| <img src="assets/logo.png" alt="logo" width="40"/> | **Pairents** | **Maja Chlipała** | **VI.2025** |
+|:--:|:--:|:--:|:--:|
