@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="../assets/logo.png"/>
+</p>
+
 # Pairents - A Cooperative Networked Game
 
 Pairents is a lightweight, networked, 1v1 cooperative game with elements of a social application, inspired by Tamagotchi-style virtual pets. The game encourages collaboration between two players without direct communication, focusing on taking care of a virtual pet. Players are matched randomly, and through real-time interactions, they guide the creature through different stages of growth. 
