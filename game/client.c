@@ -249,7 +249,7 @@ int main(int argc, char *argv[]) {
             if (result == 1) {
                 printf("Stan stwora zaktualizowany.\n");
                 waiting_for_creature = 0;
-                waiting_for_response = 0; 
+                waiting_for_response = 0;
             } else if (result == -1) {
                 fprintf(stderr, "Błąd podczas odbierania stwora.\n");
                 running = 0;
