@@ -40,7 +40,7 @@ The goal of the project is to create a simple yet engaging game where two player
 1. Clone the repository:
    ```bash
    git clone https://github.com/DevStranger/Pairents.git
-   cd Pairents
+   cd Pairents/game
 
 2. Install necessary dependencies (e.g., SDL2):
    For Ubuntu:
