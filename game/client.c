@@ -256,9 +256,6 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        // aktualizacja stanu stwora lokalnie
-        update_creature(&creature);
-
         // powrót do domyślnego image-u stwora
         Uint32 now = SDL_GetTicks();
         if (current_ascii_art != default_ascii_art && now > temp_art_end_time) {
