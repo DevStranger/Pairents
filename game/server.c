@@ -251,27 +251,6 @@ void *handle_client(void *arg) {
     return NULL;
 }
 
-// czasowe update-y
-void *periodic_update_thread(void *arg) {
-    while (1) {
-        pthread_mutex_lock(&pair_mutex);
-        for (int i = 0; i < pair_count; i++) {
-            pthread_mutex_lock(&pairs[i].lock);
-            update_creature(&pairs[i].creature);
-            // wysyłamy stan stwora do obu klientów, jeśli są połączeni
-            if (pairs[i].client1 != -1)
-                send(pairs[i].client1, &pairs[i].creature, sizeof(Creature), 0);
-            if (pairs[i].client2 != -1)
-                send(pairs[i].client2, &pairs[i].creature, sizeof(Creature), 0);
-            pthread_mutex_unlock(&pairs[i].lock);
-        }
-        pthread_mutex_unlock(&pair_mutex);
-
-        sleep(5);  // co 60 sekund
-    }
-    return NULL;
-}
-
 int main() {
     // tworzymy gniazdo serwera TCP
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -309,11 +288,6 @@ int main() {
     }
 
     printf("Serwer nasłuchuje na porcie %d...\n", PORT);
-
-    // update-y
-    pthread_t updater_tid;
-    pthread_create(&updater_tid, NULL, periodic_update_thread, NULL);
-    pthread_detach(updater_tid);
 
     // główna pętla akceptująca połączenia od klientów
     while (1) {
