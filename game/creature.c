@@ -8,20 +8,19 @@
 
 // inicjalizacja stwora
 void init_creature(Creature *c) {
-    c->hunger = 80;
-    c->happiness = 70;
-    c->sleep = 100;
-    c->health = 85;
-    c->growth = 25;
-    c->love = 50;
-    c->level = 0;
+    c->hunger;
+    c->happiness;
+    c->sleep;
+    c->health;
+    c->growth;
+    c->love;
+    c->level;
 
     time_t now = time(NULL);
     c->last_update1 = now;
     c->last_update2 = now;
     c->last_update3 = now;
     c->last_update4 = now;
-
 }
 
 // aktualizacja stanu stwora na podstawie upływu czasu
