@@ -30,6 +30,17 @@ void send_response(int sock, unsigned char partner_choice, unsigned char status)
     printf("[=>] Wysłano do %d: partner_choice=%d, status=%d\n", sock, partner_choice, status);
 }
 
+const char* get_action_name(unsigned char action) {
+    switch (action) {
+        case 0: return "Feed";
+        case 1: return "Read";
+        case 2: return "Sleep";
+        case 3: return "Hug";
+        case 4: return "Play";
+        default: return "Unknown";
+    }
+}
+
 void *handle_client(void *arg) {
     int client_sock = *(int *)arg;
     free(arg);
@@ -73,7 +84,7 @@ void *handle_client(void *arg) {
     while (1) {
         unsigned char button_choice;
         ssize_t rcv = recv(client_sock, &button_choice, 1, 0);
-        printf("[>] Klient %d wybrał akcję: %d\n", client_sock, button_choice);
+        printf("[>] Klient %d wybrał akcję: %s (%d)\n", client_sock, get_action_name(button_choice), button_choice);
         if (rcv <= 0) {
             printf("[-] Klient %d się rozłączył lub błąd recv\n", client_sock);
             break;
@@ -103,14 +114,16 @@ void *handle_client(void *arg) {
             unsigned char c1 = assigned_pair->choice1;
             unsigned char c2 = assigned_pair->choice2;
 
-            printf("[✓] Para #%ld: wybor gracza1=%d, gracza2=%d -> %s\n", 
-                    assigned_pair - pairs, c1, c2, status == 1 ? "ZGODNE" : "NIEZGODNE");
+            printf("[✓] Para #%ld: gracz1=%s (%d), gracz2=%s (%d) -> %s\n",
+                    assigned_pair - pairs,
+                    get_action_name(c1), c1,
+                    get_action_name(c2), c2,
+                    status == 1 ? "ZGODNE" : "NIEZGODNE");
             
             if (status == 1) {
                 apply_action(&assigned_pair->creature, c1);
                 update_creature(&assigned_pair->creature);
-                printf("[⇄] Aktualizacja stanu stwora w parze #%ld (akcja: %d)\n", 
-                        assigned_pair - pairs, c1);
+                printf("[⇄] Aktualizacja stanu stwora w parze #%ld (akcja: %s)\n", assigned_pair - pairs, get_action_name(c1));
             }
 
             int sock1 = assigned_pair->client1;
