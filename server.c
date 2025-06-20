@@ -27,6 +27,7 @@ pthread_mutex_t pair_mutex = PTHREAD_MUTEX_INITIALIZER;
 void send_response(int sock, unsigned char partner_choice, unsigned char status) {
     unsigned char response[2] = {partner_choice, status};
     send(sock, response, 2, 0);
+    printf("[=>] Wysłano do %d: partner_choice=%d, status=%d\n", sock, partner_choice, status);
 }
 
 void *handle_client(void *arg) {
@@ -46,7 +47,7 @@ void *handle_client(void *arg) {
     }
     if (!assigned_pair) {
         if (pair_count >= MAX_CLIENTS / 2) {
-            printf("Zbyt wielu klientów!\n");
+            printf("[!] Zbyt wielu klientów! Rozłączam %d\n", client_sock);
             close(client_sock);
             pthread_mutex_unlock(&pair_mutex);
             return NULL;
@@ -74,7 +75,7 @@ void *handle_client(void *arg) {
         ssize_t rcv = recv(client_sock, &button_choice, 1, 0);
         printf("[>] Klient %d wybrał akcję: %d\n", client_sock, button_choice);
         if (rcv <= 0) {
-            printf("Klient rozłączył się lub błąd recv\n");
+            printf("[-] Klient %d się rozłączył lub błąd recv\n", client_sock);
             break;
         }
 
@@ -108,7 +109,7 @@ void *handle_client(void *arg) {
             if (status == 1) {
                 apply_action(&assigned_pair->creature, c1);
                 update_creature(&assigned_pair->creature);
-                printf("[✚] Aktualizacja stanu stwora w parze #%ld (akcja: %d)\n", 
+                printf("[⇄] Aktualizacja stanu stwora w parze #%ld (akcja: %d)\n", 
                         assigned_pair - pairs, c1);
             }
 
@@ -132,7 +133,7 @@ void *handle_client(void *arg) {
         } else {
             unsigned char partner_choice = 0;
             unsigned char status = 2; // oczekiwanie
-
+            printf("[~] Klient %d czeka na drugiego gracza...\n", client_sock);
             pthread_mutex_unlock(&assigned_pair->lock);
             send_response(client_sock, partner_choice, status);
         }
