@@ -13,8 +13,10 @@ THREAD_LIBS = -pthread
 CLIENT_OBJS = client.o gui.o creature.o
 SERVER_OBJS = server.o creature.o
 
+# Cel specjalny
 .PHONY: all clean
 
+# Cel domyślny
 all: client server
 
 client: $(CLIENT_OBJS)
@@ -23,8 +25,10 @@ client: $(CLIENT_OBJS)
 server: $(SERVER_OBJS)
 	$(CC) $(SERVER_OBJS) $(SDL_LIBS) $(THREAD_LIBS) -o server
 
+# Reguła budowania plików obiektowych
 %.o: %.c
 	$(CC) $(CFLAGS) $(SDL_CFLAGS) -c $< -o $@
 
+# Sprzątanie
 clean:
 	rm -f *.o client server
