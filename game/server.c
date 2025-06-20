@@ -5,8 +5,6 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include "creature.h"  
-#include <time.h>
-#include <errno.h>
 
 #define PORT 12345
 #define MAX_CLIENTS 10
@@ -157,97 +155,85 @@ void *handle_client(void *arg) {
         printf("[*] Klient %d (%s) przypisany jako DRUGI w parze #%ld\n", client_sock, assigned_pair->id2, assigned_pair - pairs);
     }
 
-   time_t last_update_time = time(NULL);
-
     // główna pętla odbierająca wybory klienta i synchronizująca z partnerem
-   while (1) {
-        // 1. Aktualizacja co sekundę
-        time_t now = time(NULL);
-        if (difftime(now, last_update_time) >= 1.0) {
-            pthread_mutex_lock(&assigned_pair->lock);
-            update_creature(&assigned_pair->creature);
-            if (assigned_pair->client1 != -1)
-                send(assigned_pair->client1, &assigned_pair->creature, sizeof(Creature), 0);
-            if (assigned_pair->client2 != -1)
-                send(assigned_pair->client2, &assigned_pair->creature, sizeof(Creature), 0);
-            pthread_mutex_unlock(&assigned_pair->lock);
-            last_update_time = now;
-        }
-    
-        // 2. Próba odbioru wiadomości nieblokująco
+    while (1) {
         unsigned char button_choice;
-        ssize_t rcv = recv(client_sock, &button_choice, 1, MSG_DONTWAIT);
-    
-        if (rcv > 0) {
-            // Mamy wybór przycisku
-            printf("[>] Klient %d wybrał akcję: %s (%d)\n", client_sock, get_action_name(button_choice), button_choice);
-            if (button_choice > 4) continue;
-    
-            pthread_mutex_lock(&assigned_pair->lock);
-    
-            if (is_first == 1 && !assigned_pair->has_choice1) {
-                assigned_pair->choice1 = button_choice;
-                assigned_pair->has_choice1 = 1;
-            } else if (is_first == 0 && !assigned_pair->has_choice2) {
-                assigned_pair->choice2 = button_choice;
-                assigned_pair->has_choice2 = 1;
-            }
-    
-            pthread_mutex_unlock(&assigned_pair->lock);
-        } else if (rcv == 0 || (rcv < 0 && errno != EWOULDBLOCK)) {
+        ssize_t rcv = recv(client_sock, &button_choice, 1, 0);
+        if (rcv <= 0) {
             printf("[-] Klient %d się rozłączył lub błąd recv\n", client_sock);
             break;
         }
-    
-        // 3. Sprawdzanie, czy para jest gotowa do porównania
+
+        printf("[>] Klient %d wybrał akcję: %s (%d)\n", client_sock, get_action_name(button_choice), button_choice);
+        if (button_choice > 4) continue;
+
         pthread_mutex_lock(&assigned_pair->lock);
+
+        // zapis wyboru klienta, jeśli jeszcze nie wybierał w ramach tej "tury"
+        if (is_first == 1) {
+            if (assigned_pair->has_choice1) {
+                pthread_mutex_unlock(&assigned_pair->lock);
+                continue; // już wybrał w tej turze
+            }
+            assigned_pair->choice1 = button_choice;
+            assigned_pair->has_choice1 = 1;
+        } else {
+            if (assigned_pair->has_choice2) {
+                pthread_mutex_unlock(&assigned_pair->lock);
+                continue;
+            }
+            assigned_pair->choice2 = button_choice;
+            assigned_pair->has_choice2 = 1;
+        }
+
+        // jeśli oboje wybrali już akcję, sprawdzamy zgodność i odpowiednio aktualizujemy stwora
         if (assigned_pair->has_choice1 && assigned_pair->has_choice2) {
+            unsigned char status = (assigned_pair->choice1 == assigned_pair->choice2) ? 1 : 0;
             unsigned char c1 = assigned_pair->choice1;
             unsigned char c2 = assigned_pair->choice2;
-            unsigned char status = (c1 == c2) ? 1 : 0;
-    
+
             printf("[✓] Para #%ld: gracz1=%s (%d), gracz2=%s (%d) -> %s\n",
                    assigned_pair - pairs,
                    get_action_name(c1), c1,
                    get_action_name(c2), c2,
                    status == 1 ? "ZGODNE" : "NIEZGODNE");
-    
+
             if (status == 1) {
+                // jeśli wybrali to samo, wykonujemy akcję i aktualizujemy stwora
                 apply_action(&assigned_pair->creature, c1);
                 update_creature(&assigned_pair->creature);
                 save_pairs_to_file("pairs.dat");
+                printf("[⇄] Aktualizacja stanu stwora w parze #%ld (akcja: %s)\n", assigned_pair - pairs, get_action_name(c1));
             }
-    
+
             int sock1 = assigned_pair->client1;
             int sock2 = assigned_pair->client2;
-    
+
             pthread_mutex_unlock(&assigned_pair->lock);
-    
+
+            // wysyłamy odpowiedź do obu klientów z akcją partnera i wynikiem porównania
             if (sock1 != -1) send_response(sock1, c2, status);
             if (sock2 != -1) send_response(sock2, c1, status);
-    
+
+            // jeśli wybrali to samo, wysyłamy też stan stwora po aktualizacji
             if (status == 1) {
                 if (sock1 != -1) send(sock1, &assigned_pair->creature, sizeof(Creature), 0);
                 if (sock2 != -1) send(sock2, &assigned_pair->creature, sizeof(Creature), 0);
             }
-    
+
+            // reset na kolejną turę
             pthread_mutex_lock(&assigned_pair->lock);
             assigned_pair->has_choice1 = 0;
             assigned_pair->has_choice2 = 0;
             pthread_mutex_unlock(&assigned_pair->lock);
         } else {
-            // Jeśli tylko jeden z graczy wybrał
-            if ((is_first == 1 && assigned_pair->has_choice1 && !assigned_pair->has_choice2) ||
-                (is_first == 0 && assigned_pair->has_choice2 && !assigned_pair->has_choice1)) {
-                pthread_mutex_unlock(&assigned_pair->lock);
-                send_response(client_sock, 0, 2);  // wait
-            } else {
-                pthread_mutex_unlock(&assigned_pair->lock);
-            }
+            // jeśli tylko jeden gracz w parze wybrał, czekamy na drugiego
+            unsigned char partner_choice = 0;
+            unsigned char status = 2; 
+            printf("[~] Klient %d czeka na drugiego gracza...\n", client_sock);
+            pthread_mutex_unlock(&assigned_pair->lock);
+            send_response(client_sock, partner_choice, status);
         }
-    
-        // 4. Odciążenie CPU
-        usleep(10000);
     }
 
     // zamykamy połączenie i ustawiamy socket w parze na -1 (client się rozłączył)
