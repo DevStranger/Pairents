@@ -18,11 +18,43 @@ typedef struct {
     int has_choice2;
     Creature creature;       
     pthread_mutex_t lock;
+    char id1[INET_ADDRSTRLEN];  // IP pierwszego gracza
+    char id2[INET_ADDRSTRLEN];  // IP drugiego gracza
 } Pair;
+
+typedef struct {
+    int sock;
+    char ip[INET_ADDRSTRLEN];
+} ClientInfo;
 
 Pair pairs[MAX_CLIENTS / 2];
 int pair_count = 0;
 pthread_mutex_t pair_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void save_pairs_to_file(const char *filename) {
+    FILE *fp = fopen(filename, "wb");
+    if (!fp) {
+        perror("save_pairs_to_file");
+        return;
+    }
+    fwrite(&pair_count, sizeof(int), 1, fp);
+    for (int i = 0; i < pair_count; i++) {
+        fwrite(&pairs[i], sizeof(Pair), 1, fp);
+    }
+    fclose(fp);
+}
+
+void load_pairs_from_file(const char *filename) {
+    FILE *fp = fopen(filename, "rb");
+    if (!fp) return;
+
+    fread(&pair_count, sizeof(int), 1, fp);
+    for (int i = 0; i < pair_count; i++) {
+        fread(&pairs[i], sizeof(Pair), 1, fp);
+        pthread_mutex_init(&pairs[i].lock, NULL);  // odtwórz mutex
+    }
+    fclose(fp);
+}
 
 void send_response(int sock, unsigned char partner_choice, unsigned char status) {
     unsigned char response[2] = {partner_choice, status};
@@ -123,6 +155,7 @@ void *handle_client(void *arg) {
             if (status == 1) {
                 apply_action(&assigned_pair->creature, c1);
                 update_creature(&assigned_pair->creature);
+                save_pairs_to_file("pairs.dat");
                 printf("[⇄] Aktualizacja stanu stwora w parze #%ld (akcja: %s)\n", assigned_pair - pairs, get_action_name(c1));
             }
 
@@ -177,6 +210,8 @@ int main() {
         close(server_fd);
         exit(EXIT_FAILURE);
     }
+
+    load_pairs_from_file("pairs.dat");
 
     if (listen(server_fd, MAX_CLIENTS) < 0) {
         perror("listen");
