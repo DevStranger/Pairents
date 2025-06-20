@@ -18,7 +18,7 @@ Uint32 temp_art_end_time = 0;         // timestamp, do kiedy wyświetlać temp a
 char *default_ascii_art = NULL;       // domyślny ascii art
 int waiting_for_creature = 0;         // zmienna globalna
 
-int connect_to_server() {
+int connect_to_server(const char *ip, int port) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
         perror("socket");
@@ -27,9 +27,13 @@ int connect_to_server() {
 
     struct sockaddr_in serv_addr = {
         .sin_family = AF_INET,
-        .sin_port = htons(PORT)
+        .sin_port = htons(port)
     };
-    inet_pton(AF_INET, SERVER_IP, &serv_addr.sin_addr);
+    if (inet_pton(AF_INET, ip, &serv_addr.sin_addr) <= 0) {
+        perror("inet_pton");
+        close(sock);
+        return -1;
+    }
 
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
         perror("connect");
@@ -37,7 +41,7 @@ int connect_to_server() {
         return -1;
     }
 
-    // Ustaw socket w tryb nieblokujący
+    // tryb nieblokujący
     int flags = fcntl(sock, F_GETFL, 0);
     if (flags == -1) {
         perror("fcntl get");
@@ -121,7 +125,20 @@ int main(int argc, char *argv[]) {
         .love = 75,
     };
 
-    int sock = connect_to_server();
+    if (argc != 3) {
+        fprintf(stderr, "Użycie: %s <IP_serwera> <PORT>\n", argv[0]);
+        return 1;
+    }
+
+    const char *server_ip = argv[1];
+    int server_port = atoi(argv[2]);
+    if (server_port <= 0 || server_port > 65535) {
+        fprintf(stderr, "Niepoprawny numer portu: %s\n", argv[2]);
+        return 1;
+    }
+
+    int sock = connect_to_server(server_ip, server_port);
+    
     if (sock < 0) {
         TTF_CloseFont(font_text);
         TTF_CloseFont(font_emoji);
