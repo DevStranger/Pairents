@@ -5,42 +5,31 @@
 #include <SDL2/SDL_ttf.h>
 #include "creature.h"
 
+// wymiary apki
 #define WINDOW_WIDTH  800
 #define WINDOW_HEIGHT 520
 
+// guziki
 #define BUTTON_COUNT 5
 #define BUTTON_WIDTH  100
 #define BUTTON_HEIGHT 40
 
+// zasoby gui
 typedef struct {
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Rect buttons[BUTTON_COUNT];
-    TTF_Font *font_text;      // font na teksty przy paskach, przyciskach itd.
+    TTF_Font *font_text;    
     TTF_Font *font_ascii_art_default;
     TTF_Font *font_ascii_art_small;
 } GUI;
 
-// Inicjalizacja SDL, TTF, okna i renderera oraz pozycji przycisków
+// funkcje gui
 int gui_init(GUI *gui);
-
-// Zwolnienie zasobów SDL i TTF
 void gui_destroy(GUI *gui);
-
-// Rysowanie pasków postępu (hunger, happiness itd.) dla stworzenia
 void gui_draw_creature_status(GUI *gui, Creature *creature, TTF_Font *font_text, TTF_Font *font_emoji);
-
-// Rysowanie całego GUI: tła, pasków i przycisków
 void gui_draw_buttons(GUI *gui, Creature *creature, const char *ascii_art, int is_default_ascii_art, TTF_Font *font_text, TTF_Font *font_emoji);
-
-// Sprawdzenie, czy kliknięcie (x,y) wpadło na któryś z przycisków
-// Zwraca indeks przycisku (0..BUTTON_COUNT-1) lub -1, jeśli poza przyciskami
 int gui_check_button_click(GUI *gui, int x, int y);
-
-// Wiadomości w GUI
 void gui_draw_message(GUI *gui, const char *message, TTF_Font *font_text);
-
-// Funkcje pomocnicze do rysowania pasków i tekstu - nie są eksportowane na zewnątrz (mogą być statyczne w gui.c)
-// Nie deklarujemy ich tutaj, bo to funkcje prywatne
 
 #endif // GUI_H
