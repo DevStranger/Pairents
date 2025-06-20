@@ -34,3 +34,6 @@ Once a vulnerability is confirmed, I will:
 ## Thank You
 
 Thank you for helping me keep this project secure!
+
+| <img src="assets/logo.png" alt="logo" width="40"/> | **Pairents** | **Maja Chlipała** | **VI.2025** |
+|:--:|:--:|:--:|:--:|
