@@ -267,7 +267,7 @@ void *periodic_update_thread(void *arg) {
         }
         pthread_mutex_unlock(&pair_mutex);
 
-        sleep(1);  // co 60 sekund
+        sleep(5);  // co 60 sekund
     }
     return NULL;
 }
