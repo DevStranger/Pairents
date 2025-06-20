@@ -63,9 +63,16 @@ void *handle_client(void *arg) {
     }
     pthread_mutex_unlock(&pair_mutex);
 
+    if (is_first) {
+        printf("[*] Klient %d przypisany jako PIERWSZY w parze #%ld\n", client_sock, assigned_pair - pairs);
+    } else {
+        printf("[*] Klient %d przypisany jako DRUGI w parze #%ld\n", client_sock, assigned_pair - pairs);
+    }
+
     while (1) {
         unsigned char button_choice;
         ssize_t rcv = recv(client_sock, &button_choice, 1, 0);
+        printf("[>] Klient %d wybrał akcję: %d\n", client_sock, button_choice);
         if (rcv <= 0) {
             printf("Klient rozłączył się lub błąd recv\n");
             break;
@@ -95,9 +102,14 @@ void *handle_client(void *arg) {
             unsigned char c1 = assigned_pair->choice1;
             unsigned char c2 = assigned_pair->choice2;
 
+            printf("[✓] Para #%ld: wybor gracza1=%d, gracza2=%d -> %s\n", 
+                    assigned_pair - pairs, c1, c2, status == 1 ? "ZGODNE" : "NIEZGODNE");
+            
             if (status == 1) {
                 apply_action(&assigned_pair->creature, c1);
                 update_creature(&assigned_pair->creature);
+                printf("[✚] Aktualizacja stanu stwora w parze #%ld (akcja: %d)\n", 
+                        assigned_pair - pairs, c1);
             }
 
             int sock1 = assigned_pair->client1;
@@ -173,6 +185,10 @@ int main() {
             continue;
         }
 
+        char client_ip[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, sizeof(client_ip));
+        printf("[+] Nowe połączenie od %s:%d (socket: %d)\n", client_ip, ntohs(client_addr.sin_port), *client_sock);
+        
         pthread_t tid;
         pthread_create(&tid, NULL, handle_client, client_sock);
         pthread_detach(tid);
