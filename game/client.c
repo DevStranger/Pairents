@@ -123,14 +123,7 @@ int main(int argc, char *argv[]) {
     current_ascii_art = default_ascii_art;  // na start wyświetlamy domyślny art
 
     // inicjalizacja stwora
-    Creature creature = {
-        .hunger = 70,
-        .happiness = 80,
-        .sleep = 60,
-        .health = 90,
-        .growth = 50,
-        .love = 75,
-    };
+    Creature creature = {};
     
     if (argc != 3) {
         fprintf(stderr, "Użycie: %s <IP_serwera> <PORT>\n", argv[0]);
