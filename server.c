@@ -80,17 +80,39 @@ void *handle_client(void *arg) {
     free(client_info);
     
     Pair *assigned_pair = NULL;
-    int is_first;
+    int is_first = -1; // 1 = client1, 0 = client2
 
     pthread_mutex_lock(&pair_mutex);
-    for (int i = 0; i < pair_count; ++i) {
-        if (pairs[i].client2 == -1) {
+
+    // 1. Sprawdź, czy klient z tym IP już jest w parach i nie jest podłączony (reconnect)
+    for (int i = 0; i < pair_count; i++) {
+        if (strcmp(pairs[i].id1, client_ip) == 0 && pairs[i].client1 == -1) {
+            pairs[i].client1 = client_sock;
+            assigned_pair = &pairs[i];
+            is_first = 1;
+            break;
+        }
+        if (strcmp(pairs[i].id2, client_ip) == 0 && pairs[i].client2 == -1) {
             pairs[i].client2 = client_sock;
             assigned_pair = &pairs[i];
             is_first = 0;
             break;
         }
     }
+
+    // 2. Jeśli klient nie jest w parach, spróbuj go przypisać do pary z wolnym client2
+    if (!assigned_pair) {
+        for (int i = 0; i < pair_count; i++) {
+            if (pairs[i].client2 == -1) {
+                pairs[i].client2 = client_sock;
+                assigned_pair = &pairs[i];
+                is_first = 0;
+                break;
+            }
+        }
+    }
+
+    // 3. Jeśli dalej nie przypisany, utwórz nową parę
     if (!assigned_pair) {
         if (pair_count >= MAX_CLIENTS / 2) {
             printf("[!] Zbyt wielu klientów! Rozłączam %d\n", client_sock);
@@ -104,33 +126,41 @@ void *handle_client(void *arg) {
         assigned_pair->has_choice1 = 0;
         assigned_pair->has_choice2 = 0;
         pthread_mutex_init(&assigned_pair->lock, NULL);
-        init_creature(&assigned_pair->creature);   // <--- inicjalizacja stwora!
+        init_creature(&assigned_pair->creature);   // inicjalizacja stwora
         is_first = 1;
         pair_count++;
     }
+
+    // Zapisz IP jeśli nowy klient w parze
+    if (is_first == 1) {
+        strcpy(assigned_pair->id1, client_ip);
+    } else if (is_first == 0) {
+        strcpy(assigned_pair->id2, client_ip);
+    }
+
     pthread_mutex_unlock(&pair_mutex);
 
-    if (is_first) {
-        strcpy(assigned_pair->id1, client_ip);
+    if (is_first == 1) {
         printf("[*] Klient %d (%s) przypisany jako PIERWSZY w parze #%ld\n", client_sock, assigned_pair->id1, assigned_pair - pairs);
     } else {
-        strcpy(assigned_pair->id2, client_ip);
         printf("[*] Klient %d (%s) przypisany jako DRUGI w parze #%ld\n", client_sock, assigned_pair->id2, assigned_pair - pairs);
     }
 
+    // --- główna pętla komunikacji z klientem ---
     while (1) {
         unsigned char button_choice;
         ssize_t rcv = recv(client_sock, &button_choice, 1, 0);
-        printf("[>] Klient %d wybrał akcję: %s (%d)\n", client_sock, get_action_name(button_choice), button_choice);
         if (rcv <= 0) {
             printf("[-] Klient %d się rozłączył lub błąd recv\n", client_sock);
             break;
         }
 
+        printf("[>] Klient %d wybrał akcję: %s (%d)\n", client_sock, get_action_name(button_choice), button_choice);
         if (button_choice > 4) continue;
 
         pthread_mutex_lock(&assigned_pair->lock);
-        if (is_first) {
+
+        if (is_first == 1) {
             if (assigned_pair->has_choice1) {
                 pthread_mutex_unlock(&assigned_pair->lock);
                 continue; // już wybrał w tej turze
@@ -152,11 +182,11 @@ void *handle_client(void *arg) {
             unsigned char c2 = assigned_pair->choice2;
 
             printf("[✓] Para #%ld: gracz1=%s (%d), gracz2=%s (%d) -> %s\n",
-                    assigned_pair - pairs,
-                    get_action_name(c1), c1,
-                    get_action_name(c2), c2,
-                    status == 1 ? "ZGODNE" : "NIEZGODNE");
-            
+                   assigned_pair - pairs,
+                   get_action_name(c1), c1,
+                   get_action_name(c2), c2,
+                   status == 1 ? "ZGODNE" : "NIEZGODNE");
+
             if (status == 1) {
                 apply_action(&assigned_pair->creature, c1);
                 update_creature(&assigned_pair->creature);
@@ -189,6 +219,17 @@ void *handle_client(void *arg) {
             send_response(client_sock, partner_choice, status);
         }
     }
+
+    // Zamknij połączenie i ustaw socket w parze na -1 (client się rozłączył)
+    pthread_mutex_lock(&pair_mutex);
+    if (is_first == 1) {
+        assigned_pair->client1 = -1;
+        printf("[*] Klient %d (%s) rozłączył się (client1)\n", client_sock, client_ip);
+    } else {
+        assigned_pair->client2 = -1;
+        printf("[*] Klient %d (%s) rozłączył się (client2)\n", client_sock, client_ip);
+    }
+    pthread_mutex_unlock(&pair_mutex);
 
     close(client_sock);
     return NULL;
