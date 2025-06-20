@@ -80,6 +80,10 @@ The goal of the project is to create a simple yet engaging game where two player
 
 Players will now collaborate to take care of the virtual pet!
 
+## Demo
+
+A demo video showcasing the game is available on my Google Drive: [Watch the demo](https://drive.google.com/file/d/1T58LjBJ3A5LPXXVrDNoZDngJuQAxStRn/view?usp=sharing)
+
 ## Disclaimer
 Comments in the code and server logs are written in Polish because this was a project for a course at a Polish uni, I am Polish — and also simply because I can, lol.
 
