@@ -64,7 +64,7 @@ The goal of the project is to create a simple yet engaging game where two player
 1. Open the first terminal window or tab.
 2. Run the server with the following command:
     ```bash
-    ./server <ip_address> <port>
+    ./server
     ```
 
 ### Step 2: Start the Client
@@ -72,7 +72,7 @@ The goal of the project is to create a simple yet engaging game where two player
 1. Open the second terminal window or tab.
 2. Run the client with the following command:
     ```bash
-    ./client
+    ./client <server_IP_address> <port>
     ```
    The client will attempt to connect to the server and join a pair.
 
