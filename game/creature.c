@@ -8,13 +8,13 @@
 
 // inicjalizacja stwora
 void init_creature(Creature *c) {
-    c->hunger;
-    c->happiness;
-    c->sleep;
-    c->health;
-    c->growth;
-    c->love;
-    c->level;
+    c->hunger = 80;
+    c->happiness = 70;
+    c->sleep = 100;
+    c->health = 85;
+    c->growth = 25;
+    c->love = 50;
+    c->level = 0;
 
     time_t now = time(NULL);
     c->last_update1 = now;
