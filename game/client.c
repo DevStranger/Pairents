@@ -98,7 +98,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // ładowanie fontów - tekst i emoji
     TTF_Font *font_text = TTF_OpenFont("../assets/MatrixtypeDisplayBold-6R4e6.ttf", 20);
     if (!font_text) {
         fprintf(stderr, "TTF_OpenFont font_text failed: %s\n", TTF_GetError());
@@ -113,7 +112,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // ładujemy domyślny ASCII art z pliku
     default_ascii_art = load_ascii_art("../assets/default.txt");
     if (!default_ascii_art) {
         fprintf(stderr, "Nie udało się załadować domyślnego ASCII art\n");
@@ -122,10 +120,9 @@ int main(int argc, char *argv[]) {
     }
     current_ascii_art = default_ascii_art;  // na start wyświetlamy domyślny art
 
-    // inicjalizacja stwora
     Creature creature;
     init_creature(&creature);
-    
+
     if (argc != 3) {
         fprintf(stderr, "Użycie: %s <IP_serwera> <PORT>\n", argv[0]);
         return 1;
@@ -138,9 +135,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // nawiązujemy połączenie z serwerem    
     int sock = connect_to_server(server_ip, server_port);
-    
     if (sock < 0) {
         TTF_CloseFont(font_text);
         TTF_CloseFont(font_emoji);
@@ -148,12 +143,18 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    int running = 1;                    // flaga pętli głównej programu
-    int waiting_for_response = 0;       // flaga oczekiwania na odpowiedź serwera
-    SDL_Event e;                        // struktura do obsługi zdarzeń SDL
+    // Tryb nieblokujący jest już ustawiony w connect_to_server()
+
+    int running = 1;
+    int waiting_for_response = 0;
+    int waiting_for_creature = 0;
+
+    SDL_Event e;
+    unsigned char recv_buffer[512];
+    size_t recv_buffer_len = 0;
 
     while (running) {
-        // obsługa zdarzeń SDL (klik klik, zamykanie okna, etc.)
+        // Obsługa zdarzeń SDL
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) {
                 running = 0;
@@ -162,37 +163,41 @@ int main(int argc, char *argv[]) {
                 int button_index = gui_check_button_click(&gui, e.button.x, e.button.y);
                 if (button_index >= 0) {
                     unsigned char choice = (unsigned char)button_index;
-                    // wysyłamy info o klikniętym guziku do serwera
                     if (send(sock, &choice, 1, 0) != 1) {
                         perror("send");
                         running = 0;
                         break;
                     }
-                    waiting_for_response = 1;        // czekamy teraz na odpowiedź od serwera
+                    waiting_for_response = 1;
                 }
             }
         }
 
-        // jeśli czekamy na odpowiedź serwera, to musimy ją teź od niego odebrać
-        if (waiting_for_response) {
-            unsigned char response[2];
-            ssize_t received = recv(sock, response, 2, 0);
-            if (received == 2) {
-                unsigned char partner_choice = response[0];    // wybór partnera
-                unsigned char status = response[1];            // status synchronizacji akcji
+        // Próba odbioru danych
+        ssize_t n = recv(sock, recv_buffer + recv_buffer_len, sizeof(recv_buffer) - recv_buffer_len, 0);
+        if (n > 0) {
+            recv_buffer_len += n;
+
+            // Parsowanie statusu synchronizacji (2 bajty)
+            while (waiting_for_response && recv_buffer_len >= 2) {
+                unsigned char partner_choice = recv_buffer[0];
+                unsigned char status = recv_buffer[1];
+
+                memmove(recv_buffer, recv_buffer + 2, recv_buffer_len - 2);
+                recv_buffer_len -= 2;
 
                 switch (status) {
-                    case 0:                                    // różne wybory 
+                    case 0:
                         printf("Wynik: różne wybory (mismatch).\n");
                         snprintf(message, sizeof(message), "Mismatch :( Try again!");
                         message_expire_time = SDL_GetTicks() + 8000;
                         waiting_for_response = 0;
                         break;
-                    case 1:                                    // ten sam wybór
+                    case 1:
                         printf("Wynik: takie same wybory (accepted).\n");
                         snprintf(message, sizeof(message), "Matched!");
                         message_expire_time = SDL_GetTicks() + 8000;
-                        // tablica ścieżek do plików ASCII art odpowiadających akcjom
+
                         const char *action_ascii_files[] = {
                             "../assets/fed.txt",
                             "../assets/read.txt",
@@ -203,12 +208,11 @@ int main(int argc, char *argv[]) {
                         if (partner_choice <= 4) {
                             char *new_art = load_ascii_art(action_ascii_files[partner_choice]);
                             if (new_art) {
-                                // jeśli jest już załadowany inny art tymczasowy, zwalniamy go
                                 if (current_ascii_art && current_ascii_art != default_ascii_art) {
                                     free(current_ascii_art);
                                 }
                                 current_ascii_art = new_art;
-                                temp_art_end_time = SDL_GetTicks() + 4000; // wyświetlamy przez 4 sekundy
+                                temp_art_end_time = SDL_GetTicks() + 4000;
                             } else {
                                 fprintf(stderr, "Nie udało się załadować pliku ASCII art: %s\n", action_ascii_files[partner_choice]);
                                 snprintf(message, sizeof(message), "Bunny got lost :(");
@@ -216,12 +220,12 @@ int main(int argc, char *argv[]) {
                             }
                         }
 
-                        // rozpoczynamy odbiór nieblokujący stwora
+                        // Oczekujemy na pełną strukturę Creature
                         reset_creature_receiver();
                         waiting_for_creature = 1;
                         waiting_for_response = 0;
                         break;
-                    case 2:                                                // czekamy na drugiego gracza, bo się nie może zdecydować na jeden z pięciu guzików xD
+                    case 2:
                         printf("Wynik: oczekiwanie na drugiego gracza.\n");
                         snprintf(message, sizeof(message), "Waiting ...");
                         message_expire_time = SDL_GetTicks() + 45000;
@@ -232,31 +236,26 @@ int main(int argc, char *argv[]) {
                         message_expire_time = SDL_GetTicks() + 8000;
                         waiting_for_response = 0;
                 }
-            } else if (received == 0) {
-                printf("Serwer zamknął połączenie.\n");
-                running = 0;
-            } else if (received == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-                // brak danych - kontynuujemy pętle
-            } else {
-                perror("recv");
-                running = 0;
             }
-        }
 
-       // odbieramy częściowo dane o stanie stwora co by nie zatrzymwać całej pętli programu
-       if (waiting_for_creature) {
-            int result = creature_recv_partial(sock, &creature);
-            if (result == 1) {
-                printf("Stan stwora zaktualizowany.\n");
+            // Parsowanie struktury Creature
+            while (waiting_for_creature && recv_buffer_len >= sizeof(Creature)) {
+                memcpy(&creature, recv_buffer, sizeof(Creature));
+                memmove(recv_buffer, recv_buffer + sizeof(Creature), recv_buffer_len - sizeof(Creature));
+                recv_buffer_len -= sizeof(Creature);
+
                 waiting_for_creature = 0;
-                waiting_for_response = 0;
-            } else if (result == -1) {
-                fprintf(stderr, "Błąd podczas odbierania stwora.\n");
-                running = 0;
+                printf("Stan stwora zaktualizowany.\n");
             }
+        } else if (n == 0) {
+            printf("Serwer zamknął połączenie.\n");
+            running = 0;
+        } else if (n == -1 && (errno != EAGAIN && errno != EWOULDBLOCK)) {
+            perror("recv");
+            running = 0;
         }
 
-        // powrót do domyślnego image-u stwora
+        // Powrót do domyślnego ASCII art
         Uint32 now = SDL_GetTicks();
         if (current_ascii_art != default_ascii_art && now > temp_art_end_time) {
             free(current_ascii_art);
@@ -264,27 +263,25 @@ int main(int argc, char *argv[]) {
             temp_art_end_time = 0;
         }
 
-        // rysowanie gui
+        // Rysowanie GUI
         gui_draw_buttons(&gui, &creature, current_ascii_art, current_ascii_art == default_ascii_art, font_text, font_emoji);
 
-        // wiadomości
+        // Wiadomości
         if (SDL_GetTicks() < message_expire_time) {
             gui_draw_message(&gui, message, font_text);
-        }
-        if (SDL_GetTicks() >= message_expire_time) {
+        } else {
             message[0] = '\0';
         }
         SDL_RenderPresent(gui.renderer);
 
-        SDL_Delay(16);                    // delay ~ 60fps
+        SDL_Delay(16);  // ~60fps
     }
 
-    // sprzątanie przed zamknięciem lokalu
     close(sock);
     TTF_CloseFont(font_text);
     TTF_CloseFont(font_emoji);
     if (current_ascii_art && current_ascii_art != default_ascii_art) {
-    free(current_ascii_art);
+        free(current_ascii_art);
     }
     if (default_ascii_art) {
         free(default_ascii_art);
