@@ -1,6 +1,6 @@
 # Pairents - A Cooperative Networked Game
 
-Pairents is a lightweight, networked, 1v1 cooperative game with elements of a social application, inspired by Tamagotchi-style virtual pets. The game encourages collaboration between two players without direct communication, focusing on taking care of a virtual pet. Players are matched based on compatibility, and through real-time interactions, they guide the creature through different stages of growth. Players can exchange contact details once they reach the final level (with mutual consent), allowing them to connect in the real world.
+Pairents is a lightweight, networked, 1v1 cooperative game with elements of a social application, inspired by Tamagotchi-style virtual pets. The game encourages collaboration between two players without direct communication, focusing on taking care of a virtual pet. Players are matched randomly, and through real-time interactions, they guide the creature through different stages of growth. 
 
 ## Project Overview
 
@@ -45,7 +45,8 @@ The goal of the project is to create a simple yet engaging game where two player
 2. Install necessary dependencies (e.g., SDL2):
    For Ubuntu:
    ```bash
-   sudo apt-get install libsdl2-dev
+   sudo apt install git gcc make
+   sudo apt-get install libsdl2-dev libsdl2-ttf-dev
 
 3. Build the project using make:
    ```bash
@@ -58,9 +59,8 @@ The goal of the project is to create a simple yet engaging game where two player
 1. Open the first terminal window or tab.
 2. Run the server with the following command:
     ```bash
-    ./bin/server
+    ./bin/server <ip_address> <port>
     ```
-   The server will create a "room" and wait for players to join.
 
 ### Step 2: Start the Client
 
@@ -69,7 +69,7 @@ The goal of the project is to create a simple yet engaging game where two player
     ```bash
     ./bin/client
     ```
-   The client will attempt to connect to the server and join the game room.
+   The client will attempt to connect to the server and join a pair.
 
 ### Step 3: Play the Game
 
