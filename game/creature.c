@@ -38,7 +38,7 @@ void update_creature(Creature *c) {
         c->last_update2 = now;
     }
 
-    if (difftime(now, c->last_update3) >= 600) {
+    if (difftime(now, c->last_update3) >= 1) { //bylo 600 dla testow jest 1
         if (c->sleep > 0) c->sleep--;
         c->last_update3 = now;
     }
