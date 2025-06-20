@@ -1,6 +1,11 @@
+# Kompilator C
 CC = gcc
+
+# Flagi kompilatora
 CFLAGS = -Wall -Wextra -std=c11 -I.
 SDL_CFLAGS = $(shell sdl2-config --cflags)
+
+# Biblioteki
 SDL_LIBS = $(shell sdl2-config --libs) -lSDL2_ttf
 THREAD_LIBS = -pthread
 
