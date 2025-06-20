@@ -94,13 +94,13 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    TTF_Font *font_text = TTF_OpenFont("assets/MatrixtypeDisplayBold-6R4e6.ttf", 20);
+    TTF_Font *font_text = TTF_OpenFont("../assets/MatrixtypeDisplayBold-6R4e6.ttf", 20);
     if (!font_text) {
         fprintf(stderr, "TTF_OpenFont font_text failed: %s\n", TTF_GetError());
         gui_destroy(&gui);
         return 1;
     }
-    TTF_Font *font_emoji = TTF_OpenFont("assets/NotoEmoji-VariableFont_wght.ttf", 24);
+    TTF_Font *font_emoji = TTF_OpenFont("../assets/NotoEmoji-VariableFont_wght.ttf", 24);
     if (!font_emoji) {
         fprintf(stderr, "TTF_OpenFont font_emoji failed: %s\n", TTF_GetError());
         TTF_CloseFont(font_text);
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    default_ascii_art = load_ascii_art("assets/default.txt");
+    default_ascii_art = load_ascii_art("../assets/default.txt");
     if (!default_ascii_art) {
         fprintf(stderr, "Nie udało się załadować domyślnego ASCII art\n");
         gui_destroy(&gui);
@@ -188,11 +188,11 @@ int main(int argc, char *argv[]) {
                         snprintf(message, sizeof(message), "Matched!");
                         message_expire_time = SDL_GetTicks() + 8000;
                         const char *action_ascii_files[] = {
-                            "assets/fed.txt",
-                            "assets/read.txt",
-                            "assets/slept.txt",
-                            "assets/hugged.txt",
-                            "assets/played.txt"
+                            "../assets/fed.txt",
+                            "../assets/read.txt",
+                            "../assets/slept.txt",
+                            "../assets/hugged.txt",
+                            "../assets/played.txt"
                         };
                         if (partner_choice <= 4) {
                             char *new_art = load_ascii_art(action_ascii_files[partner_choice]);
