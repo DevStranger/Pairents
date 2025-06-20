@@ -74,8 +74,11 @@ const char* get_action_name(unsigned char action) {
 }
 
 void *handle_client(void *arg) {
-    int client_sock = *(int *)arg;
-    free(arg);
+    ClientInfo *client_info = (ClientInfo *)arg;
+    int client_sock = client_info->sock;
+    char *client_ip = client_info->ip;
+    free(client_info);
+    
     Pair *assigned_pair = NULL;
     int is_first;
 
@@ -108,9 +111,11 @@ void *handle_client(void *arg) {
     pthread_mutex_unlock(&pair_mutex);
 
     if (is_first) {
-        printf("[*] Klient %d przypisany jako PIERWSZY w parze #%ld\n", client_sock, assigned_pair - pairs);
+        strcpy(assigned_pair->id1, client_ip);
+        printf("[*] Klient %d (%s) przypisany jako PIERWSZY w parze #%ld\n", client_sock, assigned_pair->id1, assigned_pair - pairs);
     } else {
-        printf("[*] Klient %d przypisany jako DRUGI w parze #%ld\n", client_sock, assigned_pair - pairs);
+        strcpy(assigned_pair->id2, client_ip);
+        printf("[*] Klient %d (%s) przypisany jako DRUGI w parze #%ld\n", client_sock, assigned_pair->id2, assigned_pair - pairs);
     }
 
     while (1) {
@@ -224,22 +229,21 @@ int main() {
     while (1) {
         struct sockaddr_in client_addr;
         socklen_t addrlen = sizeof(client_addr);
-        int *client_sock = malloc(sizeof(int));
-        if (!client_sock) continue;
-
-        *client_sock = accept(server_fd, (struct sockaddr *)&client_addr, &addrlen);
-        if (*client_sock < 0) {
+        ClientInfo *client_info = malloc(sizeof(ClientInfo));
+        if (!client_info) continue;
+    
+        client_info->sock = accept(server_fd, (struct sockaddr *)&client_addr, &addrlen);
+        if (client_info->sock < 0) {
             perror("accept");
-            free(client_sock);
+            free(client_info);
             continue;
         }
-
-        char client_ip[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, sizeof(client_ip));
-        printf("[+] Nowe połączenie od %s:%d (socket: %d)\n", client_ip, ntohs(client_addr.sin_port), *client_sock);
-        
+    
+        inet_ntop(AF_INET, &client_addr.sin_addr, client_info->ip, sizeof(client_info->ip));
+        printf("[+] Nowe połączenie od %s:%d (socket: %d)\n", client_info->ip, ntohs(client_addr.sin_port), client_info->sock);
+    
         pthread_t tid;
-        pthread_create(&tid, NULL, handle_client, client_sock);
+        pthread_create(&tid, NULL, handle_client, client_info);
         pthread_detach(tid);
     }
 
