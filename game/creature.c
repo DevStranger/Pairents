@@ -27,7 +27,7 @@ void init_creature(Creature *c) {
 void update_creature(Creature *c) {
     time_t now = time(NULL);
 
-    if (difftime(now, c->last_update1) >= 480) { 
+    if (difftime(now, c->last_update1) >= 1) {  // bylo 480 jest chwilowo 1
         if (c->hunger > 0) c->hunger--;
         c->last_update1 = now;
     }
