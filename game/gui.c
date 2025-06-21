@@ -82,7 +82,7 @@ int gui_init(GUI *gui) {
     gui->font_ascii_art_default = TTF_OpenFont("../assets/MatrixtypeDisplayBold-6R4e6.ttf", 6);
     gui->font_ascii_art_small = TTF_OpenFont("../assets/MatrixtypeDisplayBold-6R4e6.ttf", 4);
 
-    gui->window = SDL_CreateWindow("Wybierz akcję",
+    gui->window = SDL_CreateWindow("Pairents",
                                    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                    WINDOW_WIDTH, WINDOW_HEIGHT, 0);
     if (!gui->window) {
